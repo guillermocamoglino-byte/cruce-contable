@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Cruce SII vs SAP V7</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --bg:#080f1a;--bg2:#0d1626;--bg3:#111f33;--bg4:#162740;
+  --border:#1e3a5f;--border2:#254d7a;
+  --text:#e2eaf4;--text2:#8fafc8;--text3:#5a7a99;--text4:#3d5a73;
+  --blue:#38bdf8;--blue2:#0ea5e9;--blue3:#0369a1;
+  --green:#34d399;--green2:#065f46;--green3:#d1fae5;
+  --yellow:#fbbf24;--yellow2:#78350f;--yellow3:#fef3c7;
+  --red:#f87171;--red2:#7f1d1d;--red3:#fee2e2;
+  --orange:#f97316;--purple:#a78bfa;--teal:#2dd4bf;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Courier New',monospace;background:var(--bg);color:var(--text);min-height:100vh;font-size:12px}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+#hdr{background:linear-gradient(135deg,#020a14,var(--bg2));border-bottom:1px solid var(--border);
+  padding:10px 18px;display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:8px;position:sticky;top:0;z-index:200}
+.hdr-title{font-size:14px;font-weight:700;color:#f0f8ff;letter-spacing:.5px}
+.hdr-sub{font-size:9px;color:var(--text4);letter-spacing:2px;text-transform:uppercase;margin-top:1px}
+.version-badge{background:var(--bg3);border:1px solid var(--blue3);border-radius:4px;
+  padding:3px 9px;font-size:9px;color:var(--blue);font-weight:700;letter-spacing:1px}
+.month-badge{background:var(--bg3);border:1px solid var(--border);border-radius:5px;
+  padding:4px 10px;font-size:10px;color:var(--teal);font-weight:700}
+.tabs{display:flex;gap:3px;background:var(--bg2);padding:2px;border-radius:7px;border:1px solid var(--border)}
+.tab-btn{padding:5px 13px;border-radius:5px;border:none;background:transparent;
+  color:var(--text3);font-family:inherit;font-size:10px;cursor:pointer;transition:all .2s;font-weight:600}
+.tab-btn.active{background:var(--blue3);color:#fff}
+.tab-btn:hover:not(.active){color:var(--text);background:var(--bg3)}
+.panel{display:none;padding:14px 18px;animation:fadeIn .2s ease}
+.panel.active{display:block}
+.upload-section{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:12px}
+.section-label{font-size:9px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.source-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.dot-sii{background:#10b981}.dot-sap{background:#3b82f6}.dot-ic{background:#f59e0b}
+.ug4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.ug1{display:grid;grid-template-columns:1fr;gap:8px}
+.upload-box{background:var(--bg3);border:1px dashed var(--border2);border-radius:7px;
+  padding:12px;text-align:center;cursor:pointer;transition:all .2s;
+  position:relative;min-height:90px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:4px}
+.upload-box:hover,.upload-box.drag{border-color:var(--blue);background:var(--bg4)}
+.upload-box.ok{border-color:var(--green);border-style:solid}
+.upload-box input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.ub-ico{font-size:18px}.ub-title{font-size:10px;font-weight:700;color:var(--text)}
+.ub-hint{font-size:8px;color:var(--text4);line-height:1.5}
+.ub-st{font-size:9px;margin-top:2px;font-weight:600}
+.ub-dt{font-size:8px;color:var(--text3)}
+#status-bar{background:var(--bg2);border:1px solid var(--border);border-radius:6px;
+  padding:8px 12px;margin-bottom:10px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.si{display:flex;align-items:center;gap:5px;font-size:10px}
+.dot{width:7px;height:7px;border-radius:50%}
+.dot-ok{background:var(--green)}.dot-warn{background:var(--yellow)}.dot-no{background:var(--text4)}
+#btn-proc{width:100%;padding:11px;background:linear-gradient(135deg,var(--blue2),var(--blue3));
+  border:none;color:#fff;font-family:inherit;font-size:12px;font-weight:700;
+  border-radius:7px;cursor:pointer;transition:all .2s;letter-spacing:.5px}
+#btn-proc:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 4px 20px rgba(14,165,233,.35)}
+#btn-proc:disabled{opacity:.35;cursor:not-allowed}
+#prog-wrap{display:none;margin-top:8px}
+.prog-bar{height:4px;background:var(--border2);border-radius:2px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--blue2),var(--teal));border-radius:2px;transition:width .4s}
+.prog-lbl{font-size:8px;color:var(--text3);text-align:center;margin-top:2px}
+#proc-msg{font-size:10px;text-align:center;margin-top:6px;min-height:14px;padding:4px 8px;border-radius:4px}
+#proc-msg.ok{color:var(--green);background:rgba(52,211,153,.08)}
+#proc-msg.warn{color:var(--yellow);background:rgba(251,191,36,.08)}
+#proc-msg.info{color:var(--blue);background:rgba(56,189,248,.05)}
+.emp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
+.emp-card{background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:6px 8px;font-size:9px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:12px}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:10px 12px;transition:transform .15s}
+.card:hover{transform:translateY(-2px)}
+.card .ico{font-size:11px;margin-bottom:2px}.card .val{font-size:17px;font-weight:700}
+.card .lbl{font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-top:1px}
+.card .sub{font-size:8px;color:var(--text4);margin-top:1px}
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;align-items:flex-end}
+.fg label{display:block;font-size:8px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px}
+.fg select,.fg input{background:var(--bg3);border:1px solid var(--border2);color:var(--text);
+  font-family:inherit;font-size:10px;padding:5px 8px;border-radius:5px;cursor:pointer;outline:none}
+.fg input{width:160px}
+#rec-count{font-size:9px;color:var(--text4);padding-bottom:4px}
+.toolbar-right{display:flex;gap:5px;margin-left:auto;align-items:flex-end}
+.act-btn{background:var(--bg3);border:1px solid var(--border2);color:var(--text2);
+  font-family:inherit;font-size:9px;padding:5px 10px;border-radius:5px;cursor:pointer;transition:all .2s}
+.act-btn:hover{border-color:var(--blue);color:var(--blue)}
+.act-btn.dl{background:var(--green2);border-color:var(--green);color:var(--green3);font-weight:700}
+.tbl-wrap{overflow-x:auto;border-radius:7px;border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:10px}
+thead tr{background:var(--bg3);border-bottom:1px solid var(--border)}
+th{padding:7px 9px;text-align:left;color:var(--text2);font-weight:700;white-space:nowrap}
+th.r{text-align:right}
+tbody tr{border-bottom:1px solid rgba(30,58,95,.5);transition:background .1s}
+tbody tr:nth-child(even){background:rgba(13,22,38,.5)}
+tbody tr:hover{background:var(--bg3)}
+td{padding:5px 9px;white-space:nowrap}td.r{text-align:right}
+.badge{padding:2px 6px;border-radius:3px;font-size:8px;font-weight:700;white-space:nowrap}
+.b-cont{background:#064e3b;color:#34d399}
+.b-psap{background:#78350f;color:#fbbf24}
+.b-psii{background:#1e3a5f;color:#38bdf8}
+.b-recl{background:#7f1d1d;color:#f87171}
+.b-solo{background:#4a044e;color:#e879f9}
+.b-cat{background:#1e3a5f;color:#60a5fa;font-size:8px}
+.b-nocat{background:#2d1b07;color:#f97316;font-size:8px}
+.b-t33{background:#134e4a;color:#2dd4bf}
+.b-t61{background:#3b0764;color:#c084fc}
+.b-t34{background:#1c1917;color:#a8a29e}
+.b-reg{background:#064e3b;color:#34d399}
+.b-pen{background:#1e3a5f;color:#38bdf8}
+.b-rec{background:#7f1d1d;color:#f87171}
+.pag{display:flex;justify-content:center;align-items:center;gap:6px;margin-top:10px}
+.pag-btn{background:var(--bg3);border:1px solid var(--border);color:var(--text2);
+  padding:4px 10px;border-radius:5px;font-family:inherit;font-size:9px;cursor:pointer;transition:all .2s}
+.pag-btn:disabled{opacity:.3;cursor:default}
+.pag-btn:not(:disabled):hover{border-color:var(--blue);color:var(--blue)}
+#pag-info{color:var(--text3);font-size:9px}
+.res-wrap{overflow-x:auto;border-radius:7px;border:1px solid var(--border);margin-bottom:14px}
+.res-tbl{width:100%;border-collapse:collapse;font-size:10px}
+.res-tbl thead tr{background:var(--bg3);border-bottom:1px solid var(--border)}
+.res-tbl th{padding:8px 11px;text-align:left;color:var(--text2);font-weight:700;white-space:nowrap}
+.res-tbl th.r{text-align:right}
+.res-tbl tbody tr{border-bottom:1px solid rgba(30,58,95,.4)}
+.res-tbl tbody tr:nth-child(even){background:rgba(13,22,38,.4)}
+.res-tbl td{padding:7px 11px}
+.bar{width:45px;height:4px;background:var(--border2);border-radius:2px;overflow:hidden;display:inline-block;vertical-align:middle}
+.bar-fill{height:100%;border-radius:2px}
+.alert-box{background:var(--bg2);border:1px solid var(--orange);border-radius:8px;padding:12px 14px;margin-bottom:12px}
+.alert-title{color:var(--orange);font-weight:700;font-size:10px;margin-bottom:8px}
+.alert-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.ac{background:var(--bg);border-radius:5px;padding:8px 10px;border-left:3px solid var(--border)}
+.legend{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;padding:8px 12px;
+  background:var(--bg2);border:1px solid var(--border);border-radius:6px}
+.leg-item{display:flex;align-items:center;gap:4px;font-size:9px;color:var(--text2)}
+#toast{position:fixed;bottom:18px;right:18px;background:var(--bg3);
+  border:1px solid var(--border);border-radius:7px;padding:8px 14px;
+  font-size:10px;color:var(--text);box-shadow:0 6px 24px rgba(0,0,0,.6);
+  transform:translateY(60px);opacity:0;transition:all .3s;z-index:999}
+#toast.show{transform:translateY(0);opacity:1}
+
+.concept-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-bottom:12px}
+.concept-card{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:9px 12px;cursor:pointer;transition:all .2s}
+.concept-card:hover{border-color:var(--blue);transform:translateY(-1px)}
+.resp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px}
+.resp-card{background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:7px 10px}
+
+.b-noinc{background:#1c1917;color:#a8a29e}
+
+.b-sinval{background:#1c1917;color:#6b7280}
+
+</style>
+</head>
+<body>
+<div id="hdr">
+  <div style="display:flex;align-items:center;gap:10px">
+    <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#0369a1,#065f46);display:flex;align-items:center;justify-content:center;font-size:16px;border:1px solid var(--border2)">&#x1F4CA;</div>
+    <div>
+      <div class="hdr-title">SII &#x21C4; SAP <span style="color:var(--text3);font-weight:400;font-size:11px">Cruce Libro de Compras</span></div>
+      <div class="hdr-sub">ESE1 &middot; GYE &middot; MCSP &middot; ETSP &nbsp;|&nbsp; V7 SII</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+    <div class="version-badge">V7 SII</div>
+    <div class="month-badge" id="active-badge" title="Mes activo para el cruce y resumen">&#x25CF; ACTIVO: <span id="hdr-mes-activo">TODOS</span></div>
+    <select id="sel-mes-activo" onchange="updateMesActivo()" style="background:var(--bg3);border:1px solid var(--border2);color:var(--teal);font-family:inherit;font-size:10px;padding:4px 8px;border-radius:4px;font-weight:700" title="Filtra el cruce por mes activo">
+      <option value="">Todos los meses</option>
+      <option>Enero</option><option>Febrero</option><option>Marzo</option>
+      <option>Abril</option><option>Mayo</option><option>Junio</option>
+      <option>Julio</option><option>Agosto</option><option>Septiembre</option>
+      <option>Octubre</option><option>Noviembre</option><option>Diciembre</option>
+    </select>
+    <div class="tabs">
+      <button class="tab-btn active" onclick="showTab('cargar',this)">&#x1F4C1; Cargar</button>
+      <button class="tab-btn" onclick="showTab('cruce',this)">&#x1F50D; Cruce</button>
+      <button class="tab-btn" onclick="showTab('resumen',this)">&#x1F4CA; Resumen</button>
+      <button class="tab-btn" onclick="showTab('maestro',this)">&#x1F3F7; Maestro</button>
+    </div>
+  </div>
+</div>
+
+<!-- PANEL CARGAR -->
+<div id="panel-cargar" class="panel active">
+
+  <!-- HISTÓRICO GUARDADO -->
+  <div class="upload-section" style="border-color:var(--blue3)">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+      <div class="section-label" style="margin-bottom:0"><div class="source-dot" style="background:var(--blue)"></div>HISTÓRICO GUARDADO EN ESTE NAVEGADOR</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span id="hist-size" style="font-size:9px;color:var(--text3)"></span>
+        <span id="hist-total-badge" style="font-size:9px;padding:3px 10px;border-radius:4px;background:var(--bg3);border:1px solid var(--border);color:var(--text3)">0 meses guardados</span>
+        <button class="act-btn" onclick="borrarHistorico()" style="border-color:var(--red);color:var(--red)">&#x1F5D1; Borrar historial</button>
+      </div>
+    </div>
+    <div id="historico-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:6px;margin-bottom:4px">
+      <div style="font-size:9px;color:var(--text4);padding:8px">&#x23F3; Aun no hay meses guardados. Carga archivos SII y presiona "Guardar mes en historico".</div>
+    </div>
+  </div>
+
+  <!-- PASO 1: Seleccionar mes a cargar -->
+  <div class="upload-section">
+    <div class="section-label"><div class="source-dot dot-sii"></div>PASO 1 &mdash; SELECCIONA EL MES A CARGAR</div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div class="fg">
+        <label>Mes a cargar</label>
+        <select id="sel-mes-carga" style="background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:inherit;font-size:11px;padding:6px 10px;border-radius:5px;font-weight:700">
+          <option>Enero</option><option>Febrero</option><option selected>Marzo</option>
+          <option>Abril</option><option>Mayo</option><option>Junio</option>
+          <option>Julio</option><option>Agosto</option><option>Septiembre</option>
+          <option>Octubre</option><option>Noviembre</option><option>Diciembre</option>
+        </select>
+      </div>
+      <div style="font-size:9px;color:var(--text3);line-height:1.7">
+        Selecciona el mes <strong style="color:var(--blue)">antes</strong> de cargar los archivos SII.<br>
+        Puedes cargar varios meses uno tras otro sin perder el historial.
+      </div>
+    </div>
+  </div>
+
+  <!-- PASO 2: Archivos SII del mes seleccionado -->
+  <div class="upload-section">
+    <div class="section-label"><div class="source-dot dot-sii"></div>PASO 2 &mdash; ARCHIVOS SII DEL MES SELECCIONADO (hasta 12 archivos)</div>
+    <div style="font-size:9px;color:var(--text3);margin-bottom:8px">
+      Formato: <span style="color:var(--blue)">RCV_COMPRA_ESTADO_RUT_AAAAMM.csv</span> &mdash; empresa y estado se detectan del nombre automáticamente
+    </div>
+    <div class="ug1">
+      <div class="upload-box" id="box-sii" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="dropF(event,'sii')">
+        <input type="file" accept=".csv" multiple onchange="loadFiles(this.files,'sii')">
+        <div class="ub-ico">&#x1F3DB;</div>
+        <div class="ub-title">Arrastra o haz clic &mdash; selección múltiple (REGISTRO + PENDIENTE + RECLAMADO × empresas)</div>
+        <div class="ub-hint">Ejemplo: RCV_COMPRA_REGISTRO_86117800-5_202601.csv</div>
+        <div class="ub-st" id="st-sii" style="color:var(--text3)">Esperando archivos...</div>
+        <div class="ub-dt" id="dt-sii"></div>
+      </div>
+    </div>
+    <div class="emp-grid" id="sii-emp-status" style="margin-top:8px">
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:6px 8px;font-size:9px"><div style="font-weight:700;color:var(--blue)">ESE1</div><div id="ss-ESE1" style="color:var(--text4)">Sin archivos</div></div>
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:6px 8px;font-size:9px"><div style="font-weight:700;color:var(--blue)">GYE</div><div id="ss-GYE"  style="color:var(--text4)">Sin archivos</div></div>
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:6px 8px;font-size:9px"><div style="font-weight:700;color:var(--blue)">MCSP</div><div id="ss-MCSP" style="color:var(--text4)">Sin archivos</div></div>
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:6px 8px;font-size:9px"><div style="font-weight:700;color:var(--blue)">ETSP</div><div id="ss-ETSP" style="color:var(--text4)">Sin archivos</div></div>
+    </div>
+    <!-- Guardar mes button -->
+    <div style="margin-top:10px">
+      <button id="btn-save-mes" class="act-btn" onclick="guardarMes()" disabled
+        style="background:var(--bg3);border:2px solid var(--blue);color:var(--blue);font-weight:700;padding:8px 18px;font-size:11px">
+        &#x1F4BE; Guardar mes en historico
+      </button>
+      <span id="save-mes-msg" style="font-size:10px;font-weight:600;margin-left:8px"></span>
+      <div style="font-size:8px;color:var(--text4);margin-top:4px">
+        &#x26A0; Debes guardar el mes antes de procesar para que quede en el historico
+      </div>
+    </div>
+  </div>
+
+  <!-- SAP -->
+  <div class="upload-section">
+    <div class="section-label"><div class="source-dot dot-sap"></div>ARCHIVOS SAP &mdash; ZLIBRO_COMPRAS (1 por empresa)</div>
+    <div class="ug4">
+      <div class="upload-box" id="box-sap-ESE1" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="dropF(event,'sap-ESE1')">
+        <input type="file" accept=".csv,.txt,.xls,.xlsx" onchange="loadFiles(this.files,'sap-ESE1')">
+        <div class="ub-ico">&#x1F3ED;</div><div class="ub-title">SAP ESE1</div>
+        <div class="ub-st" id="st-sap-ESE1" style="color:var(--text3)">Esperando...</div>
+        <div class="ub-dt" id="dt-sap-ESE1"></div>
+      </div>
+      <div class="upload-box" id="box-sap-GYE" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="dropF(event,'sap-GYE')">
+        <input type="file" accept=".csv,.txt,.xls,.xlsx" onchange="loadFiles(this.files,'sap-GYE')">
+        <div class="ub-ico">&#x1F3ED;</div><div class="ub-title">SAP GYE</div>
+        <div class="ub-st" id="st-sap-GYE" style="color:var(--text3)">Esperando...</div>
+        <div class="ub-dt" id="dt-sap-GYE"></div>
+      </div>
+      <div class="upload-box" id="box-sap-MCSP" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="dropF(event,'sap-MCSP')">
+        <input type="file" accept=".csv,.txt,.xls,.xlsx" onchange="loadFiles(this.files,'sap-MCSP')">
+        <div class="ub-ico">&#x1F3ED;</div><div class="ub-title">SAP MCSP</div>
+        <div class="ub-st" id="st-sap-MCSP" style="color:var(--text3)">Esperando...</div>
+        <div class="ub-dt" id="dt-sap-MCSP"></div>
+      </div>
+      <div class="upload-box" id="box-sap-ETSP" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="dropF(event,'sap-ETSP')">
+        <input type="file" accept=".csv,.txt,.xls,.xlsx" onchange="loadFiles(this.files,'sap-ETSP')">
+        <div class="ub-ico">&#x1F3ED;</div><div class="ub-title">SAP ETSP</div>
+        <div class="ub-st" id="st-sap-ETSP" style="color:var(--text3)">Esperando...</div>
+        <div class="ub-dt" id="dt-sap-ETSP"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Iconstruye + Maestro + Responsables -->
+  <div class="upload-section">
+    <div class="section-label"><div class="source-dot dot-ic"></div>ARCHIVOS COMPLEMENTARIOS &mdash; Opcionales</div>
+    <div class="ug4">
+      <div class="upload-box" id="box-ic" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="dropF(event,'ic')">
+        <input type="file" accept=".csv,.xlsx" onchange="loadFiles(this.files,'ic')">
+        <div class="ub-ico">&#x1F4CB;</div>
+        <div class="ub-title">Iconstruye</div>
+        <div class="ub-hint">Forma de Pago (col AA)<br>Referencias (col S)</div>
+        <div class="ub-st" id="st-ic" style="color:var(--yellow)">Opcional</div>
+        <div class="ub-dt" id="dt-ic"></div>
+      </div>
+      <div class="upload-box" id="box-maestro" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="dropF(event,'maestro')">
+        <input type="file" accept=".xlsx,.xls,.csv" onchange="loadFiles(this.files,'maestro')">
+        <div class="ub-ico">&#x1F3F7;</div>
+        <div class="ub-title">Maestro Proveedores</div>
+        <div class="ub-hint">Actualizar maestro<br>Empresa / RUT / Concepto / Tratamiento</div>
+        <div class="ub-st" id="st-maestro" style="color:var(--green)">&#x2713; 833 proveedores embebidos</div>
+        <div class="ub-dt" id="dt-maestro"></div>
+      </div>
+      <div class="upload-box" id="box-resp" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="dropF(event,'resp')">
+        <input type="file" accept=".xlsx,.xls,.csv" onchange="loadFiles(this.files,'resp')">
+        <div class="ub-ico">&#x1F464;</div>
+        <div class="ub-title">Responsables</div>
+        <div class="ub-hint">Actualizar responsables<br>Columnas: Concepto / A cargo de:</div>
+        <div class="ub-st" id="st-resp" style="color:var(--green)">&#x2713; Responsables embebidos</div>
+        <div class="ub-dt" id="dt-resp" style="color:var(--green)">3 responsables / 9 conceptos</div>
+      </div>
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:12px;font-size:9px;color:var(--text3)">
+        <div style="font-weight:700;color:var(--text2);margin-bottom:6px">&#x2139; Formato Maestro CSV</div>
+        <div>Empresa, RUT, Concepto, Tratamiento</div>
+        <div style="margin-top:4px">GYE, 76363534-1, SERVICIOS, FO/HES/MIRO</div>
+        <div style="margin-top:8px;font-weight:700;color:var(--text2)">Formato Responsables CSV</div>
+        <div>Concepto, A cargo de:</div>
+        <div style="margin-top:4px">SERVICIOS, Madelaine Gonzalez</div>
+      </div>
+    </div>
+  </div>
+
+  <button id="btn-proc" onclick="procesar()" onmouseover="checkBtn()" disabled>&#x26A1; Procesar Cruce SII vs SAP</button>
+  <div id="prog-wrap">
+    <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+    <div class="prog-lbl" id="prog-lbl"></div>
+  </div>
+  <div id="proc-msg"></div>
+</div>
+
+<!-- PANEL CRUCE -->
+<div id="panel-cruce" class="panel">
+  <div class="cards" id="stat-cards"></div>
+  <div class="legend">
+    <span class="leg-item"><span class="badge b-cont">&#x2713; Contabilizado</span>&nbsp;SII Registro + en SAP &#x2192; OK</span>
+    <span class="leg-item"><span class="badge b-psap">&#x29D6; Pendiente SAP</span>&nbsp;SII Registro, NO en SAP &#x2192; ACCION REQUERIDA</span>
+    <span class="leg-item"><span class="badge b-noinc">&#x26D4; No Incluir</span>&nbsp;No va al libro &#x2192; solo informativo</span>
+    <span class="leg-item"><span class="badge b-psii">&#x23F0; Pend. SII</span>&nbsp;Mes cerrado queda en 0 &#x2192; solo informativo</span>
+    <span class="leg-item"><span class="badge b-recl">&#x2717; Reclamado</span>&nbsp;No va al libro &#x2192; solo informativo</span>
+    <span class="leg-item"><span class="badge b-solo">&#x26A0; Solo SAP</span>&nbsp;En SAP pero no en SII</span>
+  </div>
+  <div class="filters">
+    <div class="fg"><label>Empresa</label><select id="f-emp" onchange="applyF()"><option>Todas</option><option>ESE1</option><option>GYE</option><option>MCSP</option><option>ETSP</option></select></div>
+    <div class="fg"><label>Estado SII</label><select id="f-sii" onchange="applyF()"><option>Todos</option><option>Registrado</option><option>Pendiente</option><option>NoIncluir</option><option>Reclamado</option><option>Solo SAP</option><option>Sin Valor</option></select></div>
+    <div class="fg"><label>Estado Cruce</label><select id="f-cruce" onchange="applyF()"><option>Todos</option><option>Contabilizado</option><option>Pendiente SAP</option><option>No Incluir</option><option>Pendiente SII</option><option>Reclamado</option><option>Solo SAP</option></select></div>
+    <div class="fg"><label>Tipo Doc</label><select id="f-tipo" onchange="applyF()"><option>Todos</option><option>33</option><option>34</option><option>61</option></select></div>
+    <div class="fg"><label>Concepto</label><select id="f-cat" onchange="applyF()"><option>Todos</option><option>SERVICIOS</option><option>COMEX</option><option>MATERIALES BODEGA</option><option>Estado de Pago</option><option>RENDICION</option><option>BANCO</option><option>SEGUROS</option><option>EMP. RELACIONADAS</option><option>FACT.ESPEJO</option><option>Sin categoria</option></select></div>
+    <div class="fg"><label>Buscar</label><input id="f-q" type="text" placeholder="Folio, RUT, proveedor..." oninput="applyF()"></div>
+    <div id="rec-count"></div>
+    <div class="toolbar-right"><button class="act-btn dl" onclick="exportCSV()">&#x2193; CSV</button></div>
+  </div>
+  <div class="tbl-wrap"><table>
+    <thead><tr>
+      <th>Emp</th><th>Tipo</th><th>RUT</th><th>Proveedor</th>
+      <th>Folio</th><th>Fecha</th><th>Concepto</th><th>Responsable</th>
+      <th class="r">Neto</th><th class="r">IVA</th><th class="r">Total</th>
+      <th>Forma Pago</th><th>Referencias</th>
+      <th>Estado SII</th><th>Estado Cruce</th><th>Doc SAP</th>
+    </tr></thead>
+    <tbody id="tbl-body"></tbody>
+  </table></div>
+  <div class="pag">
+    <button class="pag-btn" id="btn-prev" onclick="chPage(-1)">&#8249; Anterior</button>
+    <span id="pag-info"></span>
+    <button class="pag-btn" id="btn-next" onclick="chPage(1)">Siguiente &#8250;</button>
+  </div>
+</div>
+
+<!-- PANEL RESUMEN -->
+<div id="panel-resumen" class="panel">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+    <div style="font-size:11px;font-weight:700">Cobertura por Empresa</div>
+    <button class="act-btn dl" onclick="exportResumen()">&#x2193; Resumen CSV</button>
+  </div>
+  <div class="res-wrap"><table class="res-tbl">
+    <thead><tr>
+      <th>Empresa</th><th>Nombre</th>
+      <th class="r">Registros</th><th class="r">Contabilizados</th>
+      <th class="r">Pend. SAP</th><th class="r">No Incluir</th>
+      <th class="r">Pend. SII</th><th class="r">Reclamados</th>
+      <th class="r">% Avance</th><th class="r">Monto Pend. SAP</th>
+    </tr></thead>
+    <tbody id="res-body"></tbody>
+  </table></div>
+  <div class="alert-box">
+    <div class="alert-title" id="alert-title">&#x26A0; Pendientes de Contabilizar en SAP</div>
+    <div class="alert-grid" id="alert-cards"></div>
+  </div>
+</div>
+
+<!-- PANEL MAESTRO -->
+<div id="panel-maestro" class="panel">
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:10px 12px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+    <div>
+      <div style="font-size:10px;font-weight:700;color:var(--text);margin-bottom:4px">Maestro de Proveedores</div>
+      <div id="maestro-stats"></div>
+    </div>
+    <button class="act-btn dl" onclick="exportMaestro()">&#x2193; Descargar Maestro CSV</button>
+  </div>
+
+  <div style="font-size:8px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px">Proveedores pendientes SAP sin categoria</div>
+  <div id="nocat-section"></div>
+
+  <div style="font-size:8px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-top:14px;margin-bottom:8px">Distribucion por Concepto &mdash; Pendientes SAP</div>
+  <div class="concept-grid" id="concept-grid"></div>
+
+  <div style="font-size:8px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-top:14px;margin-bottom:8px">Responsables por Concepto</div>
+  <div id="resp-grid"></div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+var MAESTRO = [{"e": "MCSP", "rn": "77290536-K", "np": "ABASAN SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "MCSP", "rn": "91806000-6", "np": "ABASTIBLE S. A.", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "76419254-0", "np": "ADOTS SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "MCSP", "rn": "96719620-7", "np": "ADT SECURITY SERVICES S.A", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "77783110-0", "np": "AG.DE AD.WILFRED ADELSDOR", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "MCSP", "rn": "96653890-2", "np": "AGENCIA COLUMBUS MAERSK C", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "MCSP", "rn": "96566940-K", "np": "AGENCIA UNIVERSALES S.A.", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "MCSP", "rn": "76064267-3", "np": "AHN LTDA.", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "MCSP", "rn": "10629365-1", "np": "ALFREDO A. GARRIDO SILVA", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "76220160-7", "np": "AMERICAN CONTAINER LINE L", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "MCSP", "rn": "99584650-0", "np": "AMERICAN CONTAINER LINE S", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "MCSP", "rn": "76289164-6", "np": "ANDES GRUAS SPA", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "76294442-1", "np": "ANDRES ALVEAR VALDES Y CO", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "96716620-0", "np": "ARRENDAMIENTO DE MAQUINAR", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "MCSP", "rn": "83547100-4", "np": "AUTORENTAS DEL PACIFICO S", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "76363534-1", "np": "AVLA SEGUROS DE CREDITO Y", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "97080000-K", "np": "BANCO BICE", "co": "BANCO", "tr": "FB60"}, {"e": "MCSP", "rn": "97004000-5", "np": "BANCO DE CHILE", "co": "BANCO", "tr": "FB60"}, {"e": "MCSP", "rn": "97006000-6", "np": "BANCO DE CREDITO E INVERS", "co": "BANCO", "tr": "FB60"}, {"e": "MCSP", "rn": "97023000-9", "np": "BANCO ITAU CORPBANCA", "co": "BANCO", "tr": "FB60"}, {"e": "MCSP", "rn": "97036000-K", "np": "Santander - Chile", "co": "BANCO", "tr": "FB60"}, {"e": "MCSP", "rn": "97053000-2", "np": "BANCO SECURITY", "co": "BANCO", "tr": "FB60"}, {"e": "MCSP", "rn": "76419305-9", "np": "BLUETECH CONSULTING SPA", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "77325557-1", "np": "CAMEP Chile SPA", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "76444646-1", "np": "CASA DEL RESORTE SPA", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "MCSP", "rn": "78023550-0", "np": "CASA ROSSIER LIMITADA", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "MCSP", "rn": "96821280-K", "np": "CENTRAL PARABRISAS", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "MCSP", "rn": "96756430-3", "np": "CHILEXPRESS S. A.", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "76401221-6", "np": "CHIP INDUSTRIAL LTDA.", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "MCSP", "rn": "99225000-3", "np": "CHUBB SEGUROS DE VIDA SA", "co": "SEGUROS", "tr": "FB60"}, {"e": "MCSP", "rn": "99003000-6", "np": "CIA DE SEGUROS DE VIDA CA", "co": "SEGUROS", "tr": "FB60"}, {"e": "MCSP", "rn": "99520000-7", "np": "CIA. DE PETROLEOS DE CHIL", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "76423721-8", "np": "CJG SOLUCIONES INTEGRALES", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "MCSP", "rn": "76144650-9", "np": "COMER. ELECTRICA E INDUST", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "76507600-5", "np": "COMERCIAL CASINO NACIONAL", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "77879900-6", "np": "COMERCIAL MAUCO SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "MCSP", "rn": "76552243-9", "np": "COMERCIALIZADORA CUATROI", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "MCSP", "rn": "76855779-9", "np": "COMERCIALIZADORA PATSEG S", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "MCSP", "rn": "96662540-6", "np": "CONTAINER OPERATOR S.A.", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "MCSP", "rn": "14587988-4", "np": "CRISTIAN MU\u00d1OZ MU\u00d1OZ", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "96806110-0", "np": "DARTEL S. A.", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "MCSP", "rn": "89527200-0", "np": "DELTOUR VIAJES S.A.", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "86966100-7", "np": "DHL EXPRESS (CHILE) LIMITADA", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "MCSP", "rn": "96781350-8", "np": "EDENRED CHILE S.A.", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "78097270-K", "np": "EGS COMPUTACION", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "MCSP", "rn": "77035813-2", "np": "Enable Chile SpA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "MCSP", "rn": "96800570-7", "np": "ENEL DISTRIBUCION CHILE S", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "96806980-2", "np": "ENTEL PCS S. A.", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "92580000-7", "np": "ENTEL S. A.", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "76669283-4", "np": "ENTORNO VERDE SPA", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "8861906-4", "np": "ESPINOZA AEDO PATRICIO GR", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "76453759-9", "np": "ETSP", "co": "EMP. RELACIONADAS", "tr": "FB60"}, {"e": "MCSP", "rn": "77044688-0", "np": "EY MANAGED SERVICES SPA", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "76653217-9", "np": "F&V SERVICIOS SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "MCSP", "rn": "96631520-2", "np": "FASTAIR ALMACENES DE CARG", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "MCSP", "rn": "76247050-0", "np": "FIGUEROA Y ORFALI LTDA.", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "MCSP", "rn": "76871826-1", "np": "FULL INSTRUMENT LTDA", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "MCSP", "rn": "71330800-5", "np": "FUNDACION SOCIAL C.CH.C.", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "76653209-8", "np": "FyV Rental SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "MCSP", "rn": "77367454-K", "np": "GARAGE SERVICE SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "MCSP", "rn": "6272724-1", "np": "GARATE PIZARRO ROSENDO", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "MCSP", "rn": "96889950-3", "np": "GARMENDIA MACUS S.A.", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "MCSP", "rn": "13065922-5", "np": "GERMAN ANDRES ORTIZ VERGA", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "76610420-7", "np": "Global Partners SpA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "MCSP", "rn": "96941960-2", "np": "GPS CHILE S.A.", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "77129641-6", "np": "GRUPO AGUILAT Y BECKAR LT", "co": "Estado de Pago", "tr": "OC/HES/MIRO"}, {"e": "MCSP", "rn": "88983600-8", "np": "GTD TELEDUCTOS S.A.", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "96721280-6", "np": "GTD TELESAT S.A.", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "99231000-6", "np": "HDI SEGUROS S. A.", "co": "SEGUROS", "tr": "FB60"}, {"e": "MCSP", "rn": "9733818-3", "np": "HECTOR DAVID OPORTO JIMEN", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "MCSP", "rn": "16852575-3", "np": "HERRERA HERRERA MANUEL AL", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "17729854-9", "np": "HERRERA HERRERA SEBASTIAN", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "84708300-K", "np": "HILTI CHILE LTDA.", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "MCSP", "rn": "76025112-7", "np": "HOSTAL, REST. Y SERV. DE", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "MCSP", "rn": "76994073-1", "np": "HOTELERA PULMAHUE SPA", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "MCSP", "rn": "96941720-0", "np": "ICONSTRUYE S.A.", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "76217133-3", "np": "IMP.DIST.Y COM.DE EQ.TELC", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "MCSP", "rn": "77112420-8", "np": "IMPORTADORA KAMEES SARAKI", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "MCSP", "rn": "76037465-2", "np": "IMPORTADORA RIOS Y COMPAN", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "MCSP", "rn": "76128348-0", "np": "IMPRENTA SEIT LIMITADA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "MCSP", "rn": "76150343-K", "np": "INDURA S.A.", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "MCSP", "rn": "76996513-0", "np": "Ingenier\u00eda impo.Serv. Sot", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "MCSP", "rn": "76545616-9", "np": "INV GASTRONOMIA Y HOTELER", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "76756837-1", "np": "INVERSIONES IP SPA", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "96756680-2", "np": "IRON MOUNTAIN CHILE", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "76134606-7", "np": "IVELAT CHILE SPA", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "12567109-8", "np": "JOHN CARLOS TORO RUIZ", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "MCSP", "rn": "76029085-8", "np": "JORGE NOVOA OSSA Y CIA.", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "MCSP", "rn": "7403252-4", "np": "JUAN CARLOS SUAREZ BRICE\u00d1", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "MCSP", "rn": "76818712-6", "np": "KRMA DESARROLLO INFORMATI", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "90844000-5", "np": "KUPFER HERMANOS S. A.", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "MCSP", "rn": "76415589-0", "np": "KYOCERA DOCUMENT SOLUTION", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "77367656-9", "np": "LA COCINA MAGICA SPA", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "MCSP", "rn": "78202710-7", "np": "LEVTEC CHILE LTDA.", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "MCSP", "rn": "77574973-3", "np": "LICMAN SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "MCSP", "rn": "76031246-0", "np": "MAESTRANZA LIH LIMITADA", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "96711590-8", "np": "MANANTIAL S.A.", "co": "MATERIALES BODEGA", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "96508210-7", "np": "MAPFRE,CIA.DE SEGUROS DE", "co": "SEGUROS", "tr": "FB60"}, {"e": "MCSP", "rn": "76453754-8", "np": "MAQUINARIAS CRUZ DEL SUR", "co": "EMP. RELACIONADAS", "tr": "FB60"}, {"e": "MCSP", "rn": "96707720-8", "np": "MEDITERRANEAN SHIPPING CO", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "MCSP", "rn": "12174115-6", "np": "MIGUEL ENRIQUE AVALOS HER", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "76458535-6", "np": "MONTAJE Y CONSTRUCCION LI", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "77515976-6", "np": "MONTAJES Y SERVICIOS SPA", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "76061053-4", "np": "MPC CHILE EIRL", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "79938160-5", "np": "MULTISERVICE F.L. LTDA.", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "70285100-9", "np": "MUTUAL DE SEGURIDAD C.CH.", "co": "SERVICIOS", "tr": "HES/MIRO"}, {"e": "MCSP", "rn": "78038240-6", "np": "O.D.I. LIMITADA", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "MCSP", "rn": "77630439-5", "np": "OPERADORA DE SISTEMAS ELE", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "88855300-2", "np": "OTERO Y DOMINGUEZ LIMITAD", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "MCSP", "rn": "76318120-0", "np": "PAREJA Y PRADO LIMITADA", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "9723124-9", "np": "PATRICIA ANGELICA VENEGAS", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "MCSP", "rn": "96768410-4", "np": "PAYROLL S.A.", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "MCSP", "rn": "79760310-4", "np": "POLIMIN SPA", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "MCSP", "rn": "76207327-7", "np": "PREFABRICADOS DE HORMIGON", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "MCSP", "rn": "96514060-3", "np": "PROSEGUR CHILE S.A.", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "96556940-5", "np": "PROVEEDORES INTEGRALES PR", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "MCSP", "rn": "76008959-1", "np": "PUERTO COLUMBO LTDA.", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "MCSP", "rn": "78623770-K", "np": "QUIMICA MAGUEY LTDA.", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "MCSP", "rn": "7938367-8", "np": "RAMIREZ MARTINEZ ANGEL ED", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "76743492-8", "np": "REALE CHILE SEGUROS GENER", "co": "SEGUROS", "tr": "FB60"}, {"e": "MCSP", "rn": "76255044-K", "np": "RENNER COATINGS CHILE SpA", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "MCSP", "rn": "85208700-5", "np": "RENTAEQUIPOS LEASING S.A.", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "76349271-0", "np": "RENTAS SAN PEDRO S.A.", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "77106804-9", "np": "REP.CAROLINA J.PEREZ SILV", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "MCSP", "rn": "12480043-9", "np": "ROBERTO FRANCISCO BRAVO A", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "78912510-4", "np": "RS COMPONENTES ELECTRONIC", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "MCSP", "rn": "96875230-8", "np": "RUTA DEL MAIPO SOCIEDAD C", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "96908970-K", "np": "SAN ANTONIO TERMINAL INTE", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "MCSP", "rn": "96535620-7", "np": "SANTANDER FACTORING S.A.", "co": "BANCO", "tr": "FB60"}, {"e": "MCSP", "rn": "78141230-9", "np": "SCHENKER CHILE SA", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "MCSP", "rn": "97018000-1", "np": "SCOTIABANK CHILE SA", "co": "BANCO", "tr": "FB60"}, {"e": "MCSP", "rn": "76263414-7", "np": "SEGUROS DE VIDA SURAMERIC", "co": "SEGUROS", "tr": "FB60"}, {"e": "MCSP", "rn": "76573553-K", "np": "SERGIO AGUILERA V. SERV.", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "77338692-7", "np": "SERVICE MAQ SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "MCSP", "rn": "77052624-8", "np": "SERVICIO DE TRANSPORTES C", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "60804000-5", "np": "SERVICIO NACIONAL DE ADUA", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "MCSP", "rn": "76326014-3", "np": "SERVICIO TECNICO BCC LIMI", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "94058000-5", "np": "SERVICIOS AEROPORTUARIOS", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "MCSP", "rn": "76354292-0", "np": "SERVICIOS DE PRECISION EN", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "MCSP", "rn": "76156793-4", "np": "SERVICIOS DE SALUD OCUPAC", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "85896100-9", "np": "SERVICIOS EQUIFAX CHILE L", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "MCSP", "rn": "77011136-6", "np": "SERVICIOS PUBLICITARIOS Y", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "MCSP", "rn": "88417000-1", "np": "SKY AIRLINE S.A.", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "MCSP", "rn": "76925980-5", "np": "SO.COMERCIALIZADORA TECNO", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "MCSP", "rn": "76052927-3", "np": "SOC. CONC. AUTOPISTA NUEV", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "77337752-9", "np": "SOC. CONCESIONARIA RUTA 5", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "96820630-3", "np": "SOC.CONC.AUTOPISTA ACONCA", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "76496130-7", "np": "SOC.CONC.COSTANERA NORTE", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "96945440-8", "np": "SOC.CONCE.AUTOPISTA CENTR", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "96992030-1", "np": "SOC.CONCES VESP.NORTE EXP", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "76376061-8", "np": "SOCIEDAD CONCESIONARIA VE", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "76987741-K", "np": "SOCIEDAD GRUTRANS SPA", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "76425363-9", "np": "SOCIEDAD PLUSS DENTT S.A.", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "MCSP", "rn": "83628100-4", "np": "SONDA S.A.", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "78239560-2", "np": "SUPERMERCADO DEL NEUMATIC", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "MCSP", "rn": "96685690-4", "np": "TALBOT HOTELS S.A.", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "MCSP", "rn": "76589510-3", "np": "TECNICABLES LTDA.", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "MCSP", "rn": "90635000-9", "np": "TELEFONICA CHILE S.A.", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "76124890-1", "np": "Telef\u00f3nica M\u00f3viles Chile", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "96908870-3", "np": "TERMINAL PACIFICO SUR VAL", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "MCSP", "rn": "76576076-3", "np": "TRANSP.  FELIX ZAMORANO L", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "77175696-4", "np": "TRANSPORTES BUENA RUTA EI", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "77604194-7", "np": "TRANSPORTES MORA SPA", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "76264576-9", "np": "TRANSPORTES VIA EXPRESS L", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "MCSP", "rn": "96542490-3", "np": "TRECK S.A.", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "MCSP", "rn": "81821100-7", "np": "TURISMO COCHA S.A.", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "76058647-1", "np": "VERISURE CHILE SPA", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "79874200-0", "np": "VIA LIMPIA SPA", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "76351867-1", "np": "VIDRIERIA JOTACE LIMITADA", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "81756300-7", "np": "VILLAR HERMANOS S.A.", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "MCSP", "rn": "7904311-7", "np": "VILMA XIMENA ALIAGA CORTE", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "77112728-2", "np": "VINSON CONSULTING SPA.", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "MCSP", "rn": "76783680-5", "np": "WAYPOINT TELECOMUNICACION", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "78701740-1", "np": "WURTH CHILE LIMITADA", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "MCSP", "rn": "8409664-4", "np": "ZAMBON BERLAGOSKY MARCOS", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "MCSP", "rn": "99037000-1", "np": "ZURICH CHILE SEGURO GENER", "co": "SEGUROS", "tr": "FB60"}, {"e": "MCSP", "rn": "77223241-1", "np": "TATTERSALL SERVICIOS AUTOMOTRICES S A", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "MCSP", "rn": "7061578-9", "np": "IVAN DAVID ORTUZAR GALVEZ", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "MCSP", "rn": "77102287-1", "np": "TRANSPORTES BEGO\u00c3\u2018A FIERRO CARTAGENA E.I.R.L.", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "MCSP", "rn": "77108652-7", "np": "SOCIEDAD TRANSDAILLE LIMITADA", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "MCSP", "rn": "77461750-7", "np": "LIEBHERR CHILE SpA", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "MCSP", "rn": "77098840-3", "np": "CRANE SERVICE CHILE LTDA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "MCSP", "rn": "76834819-7", "np": "DESPAPELIZA SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "MCSP", "rn": "76320613-0", "np": "TIBA CHILE SPA", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "MCSP", "rn": "6272724-1", "np": "ROSENDO FRANCISCO GARATE PIZARRO", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "MCSP", "rn": "76410713-6", "np": "SAPADVANCE CHILE SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "MCSP", "rn": "77517603-2", "np": "RR GLOBAL SERVICE SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "MCSP", "rn": "9430174-2", "np": "JORGE WLADIMIR CONTRERAS ZORRILLA", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "78893290-1", "np": "COMERCIAL VIMO LTDA.", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "MCSP", "rn": "78716330-0", "np": "TRANSPORTE DE EXCEDENTES INDUSTRIALES Y DE CONSTRUCCION LTDA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "MCSP", "rn": "12180973-7", "np": "JOSE ALFONSO RODRIGUEZ CID", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "76276037-1", "np": "Fumigaciones y Servicios Ambientales SPA", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "76173410-5", "np": "QWANTEC INGENIER\u00c3\u008dA LTDA", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "MCSP", "rn": "8409664-4", "np": "MARCOS SIMON ZAMBON BERLAGOSKY", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "MCSP", "rn": "76408750-K", "np": "CARGO COMPASS CHILE SPA", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "MCSP", "rn": "76192151-7", "np": "TODO IZAJE SA", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "MCSP", "rn": "76879934-2", "np": "TECCIN SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "MCSP", "rn": "77663150-7", "np": "HOTELERA DIEGO DE ALMAGRO LTDA", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "MCSP", "rn": "77184144-9", "np": "INVERSIONES DON ALEJANDRO SPA", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "76401812-5", "np": "SOCIEDAD DE ASESORIAS DE RIESGO CREDIA SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "MCSP", "rn": "7904311-7", "np": "VILMA XIMENA DEL CARMEN ALIAGA CORTES", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "MCSP", "rn": "9733818-3", "np": "HECTOR DAVID OPORTO JIMENEZ", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "MCSP", "rn": "9987739-1", "np": "SILVIA EDITH MARDONES TOLOZA", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "MCSP", "rn": "80565900-9", "np": "YOLITO BALART HNOS. LTDA.", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "MCSP", "rn": "78540190-5", "np": "IMPORTADORA NOVUS SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "MCSP", "rn": "81548400-2", "np": "MILAN FABJANOVIC SPA", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "MCSP", "rn": "76173258-7", "np": "Unnio Seguros Generales S.A.", "co": "SEGUROS", "tr": "FB60"}, {"e": "MCSP", "rn": "19202964-3", "np": "LUIS ROBERTO MORALES VARGAS", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "MCSP", "rn": "76119938-2", "np": "ALCANTARA FORMACION LIMITADA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "MCSP", "rn": "60910000-1", "np": "Universidad de Chile", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "MCSP", "rn": "94795000-2", "np": "CIA.CHILENA DE COMUNICACIONES S.A.", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "MCSP", "rn": "76723460-0", "np": "AGENCIA DE ADUANAS   JAIME URBINA Y CIA LTDA", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "MCSP", "rn": "76014538-6", "np": "SALCEDO  CIA LIMITADA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "MCSP", "rn": "89862200-2", "np": "LATAM AIRLINES GROUP S.A.", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "MCSP", "rn": "86731200-5", "np": "QUINTEC CHILE S.A.", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "MCSP", "rn": "78131420-K", "np": "INGENIERIA DESIMAT LIMITADA", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "MCSP", "rn": "96670840-9", "np": "DIMERC S. A.", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "MCSP", "rn": "76846325-5", "np": "MARCO AURELIO VEJAR VEGA, REPARACION, MANTENCION DE GENERADORES Y FABR", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "MCSP", "rn": "76359457-2", "np": "VIDRIOS Y ALUMINIOS ANTONIO SOTO VELASQUEZ SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "MCSP", "rn": "78379970-7", "np": "COMERCIAL RIO PUELO LIMITADA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "MCSP", "rn": "77680868-7", "np": "PSD CARGO SPA", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "MCSP", "rn": "76202110-2", "np": "AG.AD. PATRICIO SESNICH STEWART Y CIA.LTDA", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "MCSP", "rn": "85070200-4", "np": "SERGIO GAETE Y COMPA\u00c3\u2018IA LIMITADA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "MCSP", "rn": "83110800-2", "np": "SURLATINA AUDITORES LIMITADA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "MCSP", "rn": "76412909-1", "np": "Prodinsa S.A.", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "MCSP", "rn": "76188540-5", "np": "INSPECCION Y CERTIFICACION DE EQUIPOS LTDA. - CERTEQ LTDA.", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "MCSP", "rn": "77270640-5", "np": "LAVIN Y CIA. LTDA.", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "MCSP", "rn": "86117800-5", "np": "Gruas y Equipos Cruz del Sur S.A.", "co": "FACT.ESPEJO", "tr": "FB60"}, {"e": "GYE", "rn": "77290536-K", "np": "ABASAN SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "91806000-6", "np": "ABASTIBLE S. A.", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "76419254-0", "np": "ADOTS SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "96719620-7", "np": "ADT SECURITY SERVICES S.A", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "77783110-0", "np": "AG.DE AD.WILFRED ADELSDOR", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "GYE", "rn": "96653890-2", "np": "AGENCIA COLUMBUS MAERSK C", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "GYE", "rn": "96566940-K", "np": "AGENCIA UNIVERSALES S.A.", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "GYE", "rn": "76064267-3", "np": "AHN LTDA.", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "GYE", "rn": "10629365-1", "np": "ALFREDO A. GARRIDO SILVA", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "76220160-7", "np": "AMERICAN CONTAINER LINE L", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "GYE", "rn": "99584650-0", "np": "AMERICAN CONTAINER LINE S", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "GYE", "rn": "76289164-6", "np": "ANDES GRUAS SPA", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "76294442-1", "np": "ANDRES ALVEAR VALDES Y CO", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "96716620-0", "np": "ARRENDAMIENTO DE MAQUINAR", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "GYE", "rn": "83547100-4", "np": "AUTORENTAS DEL PACIFICO S", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "76363534-1", "np": "AVLA SEGUROS DE CREDITO Y", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "97080000-K", "np": "BANCO BICE", "co": "BANCO", "tr": "FB60"}, {"e": "GYE", "rn": "97004000-5", "np": "BANCO DE CHILE", "co": "BANCO", "tr": "FB60"}, {"e": "GYE", "rn": "97006000-6", "np": "BANCO DE CREDITO E INVERS", "co": "BANCO", "tr": "FB60"}, {"e": "GYE", "rn": "97023000-9", "np": "BANCO ITAU CORPBANCA", "co": "BANCO", "tr": "FB60"}, {"e": "GYE", "rn": "97036000-K", "np": "Santander - Chile", "co": "BANCO", "tr": "FB60"}, {"e": "GYE", "rn": "97053000-2", "np": "BANCO SECURITY", "co": "BANCO", "tr": "FB60"}, {"e": "GYE", "rn": "76419305-9", "np": "BLUETECH CONSULTING SPA", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "77325557-1", "np": "CAMEP Chile SPA", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "76444646-1", "np": "CASA DEL RESORTE SPA", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "GYE", "rn": "78023550-0", "np": "CASA ROSSIER LIMITADA", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "GYE", "rn": "96821280-K", "np": "CENTRAL PARABRISAS", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "GYE", "rn": "96756430-3", "np": "CHILEXPRESS S. A.", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "76401221-6", "np": "CHIP INDUSTRIAL LTDA.", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "GYE", "rn": "99225000-3", "np": "CHUBB SEGUROS DE VIDA SA", "co": "SEGUROS", "tr": "FB60"}, {"e": "GYE", "rn": "99003000-6", "np": "CIA DE SEGUROS DE VIDA CA", "co": "SEGUROS", "tr": "FB60"}, {"e": "GYE", "rn": "99520000-7", "np": "CIA. DE PETROLEOS DE CHIL", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "76423721-8", "np": "CJG SOLUCIONES INTEGRALES", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "76144650-9", "np": "COMER. ELECTRICA E INDUST", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "76507600-5", "np": "COMERCIAL CASINO NACIONAL", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "77879900-6", "np": "COMERCIAL MAUCO SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "76552243-9", "np": "COMERCIALIZADORA CUATROI", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "76855779-9", "np": "COMERCIALIZADORA PATSEG S", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "GYE", "rn": "96662540-6", "np": "CONTAINER OPERATOR S.A.", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "GYE", "rn": "14587988-4", "np": "CRISTIAN MU\u00d1OZ MU\u00d1OZ", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "96806110-0", "np": "DARTEL S. A.", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "GYE", "rn": "89527200-0", "np": "DELTOUR VIAJES S.A.", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "86966100-7", "np": "DHL EXPRESS (CHILE) LIMITADA", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "GYE", "rn": "96781350-8", "np": "EDENRED CHILE S.A.", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "78097270-K", "np": "EGS COMPUTACION", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "77035813-2", "np": "Enable Chile SpA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "96800570-7", "np": "ENEL DISTRIBUCION CHILE S", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "96806980-2", "np": "ENTEL PCS S. A.", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "92580000-7", "np": "ENTEL S. A.", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "76669283-4", "np": "ENTORNO VERDE SPA", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "8861906-4", "np": "ESPINOZA AEDO PATRICIO GR", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "76453759-9", "np": "ETSP", "co": "EMP. RELACIONADAS", "tr": "FB60"}, {"e": "GYE", "rn": "77044688-0", "np": "EY MANAGED SERVICES SPA", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "76653217-9", "np": "F&V SERVICIOS SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "96631520-2", "np": "FASTAIR ALMACENES DE CARG", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "GYE", "rn": "76247050-0", "np": "FIGUEROA Y ORFALI LTDA.", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "GYE", "rn": "76871826-1", "np": "FULL INSTRUMENT LTDA", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "GYE", "rn": "71330800-5", "np": "FUNDACION SOCIAL C.CH.C.", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "76653209-8", "np": "FyV Rental SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "77367454-K", "np": "GARAGE SERVICE SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "6272724-1", "np": "GARATE PIZARRO ROSENDO", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "96889950-3", "np": "GARMENDIA MACUS S.A.", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "GYE", "rn": "13065922-5", "np": "GERMAN ANDRES ORTIZ VERGA", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "76610420-7", "np": "Global Partners SpA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "96941960-2", "np": "GPS CHILE S.A.", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "77129641-6", "np": "GRUPO AGUILAT Y BECKAR LT", "co": "Estado de Pago", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "88983600-8", "np": "GTD TELEDUCTOS S.A.", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "96721280-6", "np": "GTD TELESAT S.A.", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "99231000-6", "np": "HDI SEGUROS S. A.", "co": "SEGUROS", "tr": "FB60"}, {"e": "GYE", "rn": "9733818-3", "np": "HECTOR DAVID OPORTO JIMEN", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "GYE", "rn": "16852575-3", "np": "HERRERA HERRERA MANUEL AL", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "17729854-9", "np": "HERRERA HERRERA SEBASTIAN", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "84708300-K", "np": "HILTI CHILE LTDA.", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "GYE", "rn": "76025112-7", "np": "HOSTAL, REST. Y SERV. DE", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "GYE", "rn": "76994073-1", "np": "HOTELERA PULMAHUE SPA", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "GYE", "rn": "96941720-0", "np": "ICONSTRUYE S.A.", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "76217133-3", "np": "IMP.DIST.Y COM.DE EQ.TELC", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "GYE", "rn": "77112420-8", "np": "IMPORTADORA KAMEES SARAKI", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "GYE", "rn": "76037465-2", "np": "IMPORTADORA RIOS Y COMPAN", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "GYE", "rn": "76128348-0", "np": "IMPRENTA SEIT LIMITADA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "76150343-K", "np": "INDURA S.A.", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "GYE", "rn": "76996513-0", "np": "Ingenier\u00eda impo.Serv. Sot", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "76545616-9", "np": "INV GASTRONOMIA Y HOTELER", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "76756837-1", "np": "INVERSIONES IP SPA", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "96756680-2", "np": "IRON MOUNTAIN CHILE", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "76134606-7", "np": "IVELAT CHILE SPA", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "12567109-8", "np": "JOHN CARLOS TORO RUIZ", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "GYE", "rn": "76029085-8", "np": "JORGE NOVOA OSSA Y CIA.", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "7403252-4", "np": "JUAN CARLOS SUAREZ BRICE\u00d1", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "76818712-6", "np": "KRMA DESARROLLO INFORMATI", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "90844000-5", "np": "KUPFER HERMANOS S. A.", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "GYE", "rn": "76415589-0", "np": "KYOCERA DOCUMENT SOLUTION", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "77367656-9", "np": "LA COCINA MAGICA SPA", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "GYE", "rn": "78202710-7", "np": "LEVTEC CHILE LTDA.", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "GYE", "rn": "77574973-3", "np": "LICMAN SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "76031246-0", "np": "MAESTRANZA LIH LIMITADA", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "96711590-8", "np": "MANANTIAL S.A.", "co": "MATERIALES BODEGA", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "96508210-7", "np": "MAPFRE,CIA.DE SEGUROS DE", "co": "SEGUROS", "tr": "FB60"}, {"e": "GYE", "rn": "76453754-8", "np": "MAQUINARIAS CRUZ DEL SUR", "co": "EMP. RELACIONADAS", "tr": "FB60"}, {"e": "GYE", "rn": "96707720-8", "np": "MEDITERRANEAN SHIPPING CO", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "GYE", "rn": "12174115-6", "np": "MIGUEL ENRIQUE AVALOS HER", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "76458535-6", "np": "MONTAJE Y CONSTRUCCION LI", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "77515976-6", "np": "MONTAJES Y SERVICIOS SPA", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "76061053-4", "np": "MPC CHILE EIRL", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "79938160-5", "np": "MULTISERVICE F.L. LTDA.", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "70285100-9", "np": "MUTUAL DE SEGURIDAD C.CH.", "co": "SERVICIOS", "tr": "HES/MIRO"}, {"e": "GYE", "rn": "78038240-6", "np": "O.D.I. LIMITADA", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "GYE", "rn": "77630439-5", "np": "OPERADORA DE SISTEMAS ELE", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "88855300-2", "np": "OTERO Y DOMINGUEZ LIMITAD", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "GYE", "rn": "76318120-0", "np": "PAREJA Y PRADO LIMITADA", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "9723124-9", "np": "PATRICIA ANGELICA VENEGAS", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "GYE", "rn": "96768410-4", "np": "PAYROLL S.A.", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "79760310-4", "np": "POLIMIN SPA", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "GYE", "rn": "76207327-7", "np": "PREFABRICADOS DE HORMIGON", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "GYE", "rn": "96514060-3", "np": "PROSEGUR CHILE S.A.", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "96556940-5", "np": "PROVEEDORES INTEGRALES PR", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "GYE", "rn": "76008959-1", "np": "PUERTO COLUMBO LTDA.", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "GYE", "rn": "78623770-K", "np": "QUIMICA MAGUEY LTDA.", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "GYE", "rn": "7938367-8", "np": "RAMIREZ MARTINEZ ANGEL ED", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "76743492-8", "np": "REALE CHILE SEGUROS GENER", "co": "SEGUROS", "tr": "FB60"}, {"e": "GYE", "rn": "76255044-K", "np": "RENNER COATINGS CHILE SpA", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "GYE", "rn": "85208700-5", "np": "RENTAEQUIPOS LEASING S.A.", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "76349271-0", "np": "RENTAS SAN PEDRO S.A.", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "77106804-9", "np": "REP.CAROLINA J.PEREZ SILV", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "GYE", "rn": "12480043-9", "np": "ROBERTO FRANCISCO BRAVO A", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "78912510-4", "np": "RS COMPONENTES ELECTRONIC", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "GYE", "rn": "96875230-8", "np": "RUTA DEL MAIPO SOCIEDAD C", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "96908970-K", "np": "SAN ANTONIO TERMINAL INTE", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "GYE", "rn": "96535620-7", "np": "SANTANDER FACTORING S.A.", "co": "BANCO", "tr": "FB60"}, {"e": "GYE", "rn": "78141230-9", "np": "SCHENKER CHILE SA", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "GYE", "rn": "97018000-1", "np": "SCOTIABANK CHILE SA", "co": "BANCO", "tr": "FB60"}, {"e": "GYE", "rn": "76263414-7", "np": "SEGUROS DE VIDA SURAMERIC", "co": "SEGUROS", "tr": "FB60"}, {"e": "GYE", "rn": "76573553-K", "np": "SERGIO AGUILERA V. SERV.", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "77338692-7", "np": "SERVICE MAQ SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "77052624-8", "np": "SERVICIO DE TRANSPORTES C", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "60804000-5", "np": "SERVICIO NACIONAL DE ADUA", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "GYE", "rn": "76326014-3", "np": "SERVICIO TECNICO BCC LIMI", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "94058000-5", "np": "SERVICIOS AEROPORTUARIOS", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "GYE", "rn": "76354292-0", "np": "SERVICIOS DE PRECISION EN", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "GYE", "rn": "76156793-4", "np": "SERVICIOS DE SALUD OCUPAC", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "85896100-9", "np": "SERVICIOS EQUIFAX CHILE L", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "77011136-6", "np": "SERVICIOS PUBLICITARIOS Y", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "GYE", "rn": "88417000-1", "np": "SKY AIRLINE S.A.", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "GYE", "rn": "76925980-5", "np": "SO.COMERCIALIZADORA TECNO", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "GYE", "rn": "76052927-3", "np": "SOC. CONC. AUTOPISTA NUEV", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "77337752-9", "np": "SOC. CONCESIONARIA RUTA 5", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "96820630-3", "np": "SOC.CONC.AUTOPISTA ACONCA", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "76496130-7", "np": "SOC.CONC.COSTANERA NORTE", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "96945440-8", "np": "SOC.CONCE.AUTOPISTA CENTR", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "96992030-1", "np": "SOC.CONCES VESP.NORTE EXP", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "76376061-8", "np": "SOCIEDAD CONCESIONARIA VE", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "76987741-K", "np": "SOCIEDAD GRUTRANS SPA", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "76425363-9", "np": "SOCIEDAD PLUSS DENTT S.A.", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "GYE", "rn": "83628100-4", "np": "SONDA S.A.", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "78239560-2", "np": "SUPERMERCADO DEL NEUMATIC", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "96685690-4", "np": "TALBOT HOTELS S.A.", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "GYE", "rn": "76589510-3", "np": "TECNICABLES LTDA.", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "GYE", "rn": "90635000-9", "np": "TELEFONICA CHILE S.A.", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "76124890-1", "np": "Telef\u00f3nica M\u00f3viles Chile", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "96908870-3", "np": "TERMINAL PACIFICO SUR VAL", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "GYE", "rn": "76576076-3", "np": "TRANSP.  FELIX ZAMORANO L", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "77175696-4", "np": "TRANSPORTES BUENA RUTA EI", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "77604194-7", "np": "TRANSPORTES MORA SPA", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "76264576-9", "np": "TRANSPORTES VIA EXPRESS L", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "GYE", "rn": "96542490-3", "np": "TRECK S.A.", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "GYE", "rn": "81821100-7", "np": "TURISMO COCHA S.A.", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "76058647-1", "np": "VERISURE CHILE SPA", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "79874200-0", "np": "VIA LIMPIA SPA", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "76351867-1", "np": "VIDRIERIA JOTACE LIMITADA", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "81756300-7", "np": "VILLAR HERMANOS S.A.", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "GYE", "rn": "7904311-7", "np": "VILMA XIMENA ALIAGA CORTE", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "77112728-2", "np": "VINSON CONSULTING SPA.", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "76783680-5", "np": "WAYPOINT TELECOMUNICACION", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "78701740-1", "np": "WURTH CHILE LIMITADA", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "GYE", "rn": "8409664-4", "np": "ZAMBON BERLAGOSKY MARCOS", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "GYE", "rn": "99037000-1", "np": "ZURICH CHILE SEGURO GENER", "co": "SEGUROS", "tr": "FB60"}, {"e": "GYE", "rn": "77223241-1", "np": "TATTERSALL SERVICIOS AUTOMOTRICES S A", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "7061578-9", "np": "IVAN DAVID ORTUZAR GALVEZ", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "GYE", "rn": "77102287-1", "np": "TRANSPORTES BEGO\u00c3\u2018A FIERRO CARTAGENA E.I.R.L.", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "GYE", "rn": "77108652-7", "np": "SOCIEDAD TRANSDAILLE LIMITADA", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "GYE", "rn": "77461750-7", "np": "LIEBHERR CHILE SpA", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "GYE", "rn": "77098840-3", "np": "CRANE SERVICE CHILE LTDA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "76834819-7", "np": "DESPAPELIZA SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "76320613-0", "np": "TIBA CHILE SPA", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "GYE", "rn": "6272724-1", "np": "ROSENDO FRANCISCO GARATE PIZARRO", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "76410713-6", "np": "SAPADVANCE CHILE SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "77517603-2", "np": "RR GLOBAL SERVICE SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "9430174-2", "np": "JORGE WLADIMIR CONTRERAS ZORRILLA", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "78893290-1", "np": "COMERCIAL VIMO LTDA.", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "GYE", "rn": "78716330-0", "np": "TRANSPORTE DE EXCEDENTES INDUSTRIALES Y DE CONSTRUCCION LTDA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "12180973-7", "np": "JOSE ALFONSO RODRIGUEZ CID", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "76276037-1", "np": "Fumigaciones y Servicios Ambientales SPA", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "76173410-5", "np": "QWANTEC INGENIER\u00c3\u008dA LTDA", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "GYE", "rn": "8409664-4", "np": "MARCOS SIMON ZAMBON BERLAGOSKY", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "GYE", "rn": "76408750-K", "np": "CARGO COMPASS CHILE SPA", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "GYE", "rn": "76192151-7", "np": "TODO IZAJE SA", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "GYE", "rn": "76879934-2", "np": "TECCIN SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "77663150-7", "np": "HOTELERA DIEGO DE ALMAGRO LTDA", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "GYE", "rn": "77184144-9", "np": "INVERSIONES DON ALEJANDRO SPA", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "76401812-5", "np": "SOCIEDAD DE ASESORIAS DE RIESGO CREDIA SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "7904311-7", "np": "VILMA XIMENA DEL CARMEN ALIAGA CORTES", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "9733818-3", "np": "HECTOR DAVID OPORTO JIMENEZ", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "GYE", "rn": "9987739-1", "np": "SILVIA EDITH MARDONES TOLOZA", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "GYE", "rn": "80565900-9", "np": "YOLITO BALART HNOS. LTDA.", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "GYE", "rn": "78540190-5", "np": "IMPORTADORA NOVUS SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "81548400-2", "np": "MILAN FABJANOVIC SPA", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "GYE", "rn": "76173258-7", "np": "Unnio Seguros Generales S.A.", "co": "SEGUROS", "tr": "FB60"}, {"e": "GYE", "rn": "19202964-3", "np": "LUIS ROBERTO MORALES VARGAS", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "GYE", "rn": "76119938-2", "np": "ALCANTARA FORMACION LIMITADA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "60910000-1", "np": "Universidad de Chile", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "94795000-2", "np": "CIA.CHILENA DE COMUNICACIONES S.A.", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "76723460-0", "np": "AGENCIA DE ADUANAS   JAIME URBINA Y CIA LTDA", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "GYE", "rn": "76014538-6", "np": "SALCEDO  CIA LIMITADA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "89862200-2", "np": "LATAM AIRLINES GROUP S.A.", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "86731200-5", "np": "QUINTEC CHILE S.A.", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "78131420-K", "np": "INGENIERIA DESIMAT LIMITADA", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "GYE", "rn": "96670840-9", "np": "DIMERC S. A.", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "GYE", "rn": "76846325-5", "np": "MARCO AURELIO VEJAR VEGA, REPARACION, MANTENCION DE GENERADORES Y FABR", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "76359457-2", "np": "VIDRIOS Y ALUMINIOS ANTONIO SOTO VELASQUEZ SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "78379970-7", "np": "COMERCIAL RIO PUELO LIMITADA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "77680868-7", "np": "PSD CARGO SPA", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "GYE", "rn": "76202110-2", "np": "AG.AD. PATRICIO SESNICH STEWART Y CIA.LTDA", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "GYE", "rn": "85070200-4", "np": "SERGIO GAETE Y COMPA\u00c3\u2018IA LIMITADA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "83110800-2", "np": "SURLATINA AUDITORES LIMITADA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "76412909-1", "np": "Prodinsa S.A.", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "GYE", "rn": "76188540-5", "np": "INSPECCION Y CERTIFICACION DE EQUIPOS LTDA. - CERTEQ LTDA.", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "77270640-5", "np": "LAVIN Y CIA. LTDA.", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "GYE", "rn": "86117800-5", "np": "Gruas y Equipos Cruz del Sur S.A.", "co": "FACT.ESPEJO", "tr": "FB60"}, {"e": "GYE", "rn": "76604748-3", "np": "MANDATOS FINTERRA SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "94557000-8", "np": "CONSTRUCTORA COSAL SOCIEDAD ANONIMA EN LIQUIDACION", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "77290536-K", "np": "ABASAN SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "91806000-6", "np": "ABASTIBLE S. A.", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "76419254-0", "np": "ADOTS SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "96719620-7", "np": "ADT SECURITY SERVICES S.A", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "77783110-0", "np": "AG.DE AD.WILFRED ADELSDOR", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "ESE1", "rn": "96653890-2", "np": "AGENCIA COLUMBUS MAERSK C", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "ESE1", "rn": "96566940-K", "np": "AGENCIA UNIVERSALES S.A.", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "ESE1", "rn": "76064267-3", "np": "AHN LTDA.", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "ESE1", "rn": "10629365-1", "np": "ALFREDO A. GARRIDO SILVA", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "76220160-7", "np": "AMERICAN CONTAINER LINE L", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "ESE1", "rn": "99584650-0", "np": "AMERICAN CONTAINER LINE S", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "ESE1", "rn": "76289164-6", "np": "ANDES GRUAS SPA", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "76294442-1", "np": "ANDRES ALVEAR VALDES Y CO", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "96716620-0", "np": "ARRENDAMIENTO DE MAQUINAR", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "ESE1", "rn": "83547100-4", "np": "AUTORENTAS DEL PACIFICO S", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "76363534-1", "np": "AVLA SEGUROS DE CREDITO Y", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "97080000-K", "np": "BANCO BICE", "co": "BANCO", "tr": "FB60"}, {"e": "ESE1", "rn": "97004000-5", "np": "BANCO DE CHILE", "co": "BANCO", "tr": "FB60"}, {"e": "ESE1", "rn": "97006000-6", "np": "BANCO DE CREDITO E INVERS", "co": "BANCO", "tr": "FB60"}, {"e": "ESE1", "rn": "97023000-9", "np": "BANCO ITAU CORPBANCA", "co": "BANCO", "tr": "FB60"}, {"e": "ESE1", "rn": "97036000-K", "np": "Santander - Chile", "co": "BANCO", "tr": "FB60"}, {"e": "ESE1", "rn": "97053000-2", "np": "BANCO SECURITY", "co": "BANCO", "tr": "FB60"}, {"e": "ESE1", "rn": "76419305-9", "np": "BLUETECH CONSULTING SPA", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "77325557-1", "np": "CAMEP Chile SPA", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "76444646-1", "np": "CASA DEL RESORTE SPA", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "ESE1", "rn": "78023550-0", "np": "CASA ROSSIER LIMITADA", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "ESE1", "rn": "96821280-K", "np": "CENTRAL PARABRISAS", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "ESE1", "rn": "96756430-3", "np": "CHILEXPRESS S. A.", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "76401221-6", "np": "CHIP INDUSTRIAL LTDA.", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "ESE1", "rn": "99225000-3", "np": "CHUBB SEGUROS DE VIDA SA", "co": "SEGUROS", "tr": "FB60"}, {"e": "ESE1", "rn": "99003000-6", "np": "CIA DE SEGUROS DE VIDA CA", "co": "SEGUROS", "tr": "FB60"}, {"e": "ESE1", "rn": "99520000-7", "np": "CIA. DE PETROLEOS DE CHIL", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "76423721-8", "np": "CJG SOLUCIONES INTEGRALES", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "76144650-9", "np": "COMER. ELECTRICA E INDUST", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "76507600-5", "np": "COMERCIAL CASINO NACIONAL", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "77879900-6", "np": "COMERCIAL MAUCO SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "76552243-9", "np": "COMERCIALIZADORA CUATROI", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "76855779-9", "np": "COMERCIALIZADORA PATSEG S", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "ESE1", "rn": "96662540-6", "np": "CONTAINER OPERATOR S.A.", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "ESE1", "rn": "14587988-4", "np": "CRISTIAN MU\u00d1OZ MU\u00d1OZ", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "96806110-0", "np": "DARTEL S. A.", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "ESE1", "rn": "89527200-0", "np": "DELTOUR VIAJES S.A.", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "86966100-7", "np": "DHL EXPRESS (CHILE) LIMITADA", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "ESE1", "rn": "96781350-8", "np": "EDENRED CHILE S.A.", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "78097270-K", "np": "EGS COMPUTACION", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "77035813-2", "np": "Enable Chile SpA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "96800570-7", "np": "ENEL DISTRIBUCION CHILE S", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "96806980-2", "np": "ENTEL PCS S. A.", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "92580000-7", "np": "ENTEL S. A.", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "76669283-4", "np": "ENTORNO VERDE SPA", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "8861906-4", "np": "ESPINOZA AEDO PATRICIO GR", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "76453759-9", "np": "ETSP", "co": "EMP. RELACIONADAS", "tr": "FB60"}, {"e": "ESE1", "rn": "77044688-0", "np": "EY MANAGED SERVICES SPA", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "76653217-9", "np": "F&V SERVICIOS SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "96631520-2", "np": "FASTAIR ALMACENES DE CARG", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "ESE1", "rn": "76247050-0", "np": "FIGUEROA Y ORFALI LTDA.", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "ESE1", "rn": "76871826-1", "np": "FULL INSTRUMENT LTDA", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "ESE1", "rn": "71330800-5", "np": "FUNDACION SOCIAL C.CH.C.", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "76653209-8", "np": "FyV Rental SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "77367454-K", "np": "GARAGE SERVICE SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "6272724-1", "np": "GARATE PIZARRO ROSENDO", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "96889950-3", "np": "GARMENDIA MACUS S.A.", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "ESE1", "rn": "13065922-5", "np": "GERMAN ANDRES ORTIZ VERGA", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "76610420-7", "np": "Global Partners SpA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "96941960-2", "np": "GPS CHILE S.A.", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "77129641-6", "np": "GRUPO AGUILAT Y BECKAR LT", "co": "Estado de Pago", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "88983600-8", "np": "GTD TELEDUCTOS S.A.", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "96721280-6", "np": "GTD TELESAT S.A.", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "99231000-6", "np": "HDI SEGUROS S. A.", "co": "SEGUROS", "tr": "FB60"}, {"e": "ESE1", "rn": "9733818-3", "np": "HECTOR DAVID OPORTO JIMEN", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "ESE1", "rn": "16852575-3", "np": "HERRERA HERRERA MANUEL AL", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "17729854-9", "np": "HERRERA HERRERA SEBASTIAN", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "84708300-K", "np": "HILTI CHILE LTDA.", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "ESE1", "rn": "76025112-7", "np": "HOSTAL, REST. Y SERV. DE", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "ESE1", "rn": "76994073-1", "np": "HOTELERA PULMAHUE SPA", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "ESE1", "rn": "96941720-0", "np": "ICONSTRUYE S.A.", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "76217133-3", "np": "IMP.DIST.Y COM.DE EQ.TELC", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "ESE1", "rn": "77112420-8", "np": "IMPORTADORA KAMEES SARAKI", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "ESE1", "rn": "76037465-2", "np": "IMPORTADORA RIOS Y COMPAN", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "ESE1", "rn": "76128348-0", "np": "IMPRENTA SEIT LIMITADA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "76150343-K", "np": "INDURA S.A.", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "ESE1", "rn": "76996513-0", "np": "Ingenier\u00eda impo.Serv. Sot", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "76545616-9", "np": "INV GASTRONOMIA Y HOTELER", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "76756837-1", "np": "INVERSIONES IP SPA", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "96756680-2", "np": "IRON MOUNTAIN CHILE", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "76134606-7", "np": "IVELAT CHILE SPA", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "12567109-8", "np": "JOHN CARLOS TORO RUIZ", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "ESE1", "rn": "76029085-8", "np": "JORGE NOVOA OSSA Y CIA.", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "7403252-4", "np": "JUAN CARLOS SUAREZ BRICE\u00d1", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "76818712-6", "np": "KRMA DESARROLLO INFORMATI", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "90844000-5", "np": "KUPFER HERMANOS S. A.", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "ESE1", "rn": "76415589-0", "np": "KYOCERA DOCUMENT SOLUTION", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "77367656-9", "np": "LA COCINA MAGICA SPA", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "ESE1", "rn": "78202710-7", "np": "LEVTEC CHILE LTDA.", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "ESE1", "rn": "77574973-3", "np": "LICMAN SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "76031246-0", "np": "MAESTRANZA LIH LIMITADA", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "96711590-8", "np": "MANANTIAL S.A.", "co": "MATERIALES BODEGA", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "96508210-7", "np": "MAPFRE,CIA.DE SEGUROS DE", "co": "SEGUROS", "tr": "FB60"}, {"e": "ESE1", "rn": "76453754-8", "np": "MAQUINARIAS CRUZ DEL SUR", "co": "EMP. RELACIONADAS", "tr": "FB60"}, {"e": "ESE1", "rn": "96707720-8", "np": "MEDITERRANEAN SHIPPING CO", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "ESE1", "rn": "12174115-6", "np": "MIGUEL ENRIQUE AVALOS HER", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "76458535-6", "np": "MONTAJE Y CONSTRUCCION LI", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "77515976-6", "np": "MONTAJES Y SERVICIOS SPA", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "76061053-4", "np": "MPC CHILE EIRL", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "79938160-5", "np": "MULTISERVICE F.L. LTDA.", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "70285100-9", "np": "MUTUAL DE SEGURIDAD C.CH.", "co": "SERVICIOS", "tr": "HES/MIRO"}, {"e": "ESE1", "rn": "78038240-6", "np": "O.D.I. LIMITADA", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "ESE1", "rn": "77630439-5", "np": "OPERADORA DE SISTEMAS ELE", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "88855300-2", "np": "OTERO Y DOMINGUEZ LIMITAD", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "ESE1", "rn": "76318120-0", "np": "PAREJA Y PRADO LIMITADA", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "9723124-9", "np": "PATRICIA ANGELICA VENEGAS", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "ESE1", "rn": "96768410-4", "np": "PAYROLL S.A.", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "79760310-4", "np": "POLIMIN SPA", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "ESE1", "rn": "76207327-7", "np": "PREFABRICADOS DE HORMIGON", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "ESE1", "rn": "96514060-3", "np": "PROSEGUR CHILE S.A.", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "96556940-5", "np": "PROVEEDORES INTEGRALES PR", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "ESE1", "rn": "76008959-1", "np": "PUERTO COLUMBO LTDA.", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "ESE1", "rn": "78623770-K", "np": "QUIMICA MAGUEY LTDA.", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "ESE1", "rn": "7938367-8", "np": "RAMIREZ MARTINEZ ANGEL ED", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "76743492-8", "np": "REALE CHILE SEGUROS GENER", "co": "SEGUROS", "tr": "FB60"}, {"e": "ESE1", "rn": "76255044-K", "np": "RENNER COATINGS CHILE SpA", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "ESE1", "rn": "85208700-5", "np": "RENTAEQUIPOS LEASING S.A.", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "76349271-0", "np": "RENTAS SAN PEDRO S.A.", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "77106804-9", "np": "REP.CAROLINA J.PEREZ SILV", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "ESE1", "rn": "12480043-9", "np": "ROBERTO FRANCISCO BRAVO A", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "78912510-4", "np": "RS COMPONENTES ELECTRONIC", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "ESE1", "rn": "96875230-8", "np": "RUTA DEL MAIPO SOCIEDAD C", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "96908970-K", "np": "SAN ANTONIO TERMINAL INTE", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "ESE1", "rn": "96535620-7", "np": "SANTANDER FACTORING S.A.", "co": "BANCO", "tr": "FB60"}, {"e": "ESE1", "rn": "78141230-9", "np": "SCHENKER CHILE SA", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "ESE1", "rn": "97018000-1", "np": "SCOTIABANK CHILE SA", "co": "BANCO", "tr": "FB60"}, {"e": "ESE1", "rn": "76263414-7", "np": "SEGUROS DE VIDA SURAMERIC", "co": "SEGUROS", "tr": "FB60"}, {"e": "ESE1", "rn": "76573553-K", "np": "SERGIO AGUILERA V. SERV.", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "77338692-7", "np": "SERVICE MAQ SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "77052624-8", "np": "SERVICIO DE TRANSPORTES C", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "60804000-5", "np": "SERVICIO NACIONAL DE ADUA", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "ESE1", "rn": "76326014-3", "np": "SERVICIO TECNICO BCC LIMI", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "94058000-5", "np": "SERVICIOS AEROPORTUARIOS", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "ESE1", "rn": "76354292-0", "np": "SERVICIOS DE PRECISION EN", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "ESE1", "rn": "76156793-4", "np": "SERVICIOS DE SALUD OCUPAC", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "85896100-9", "np": "SERVICIOS EQUIFAX CHILE L", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "77011136-6", "np": "SERVICIOS PUBLICITARIOS Y", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "ESE1", "rn": "88417000-1", "np": "SKY AIRLINE S.A.", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "ESE1", "rn": "76925980-5", "np": "SO.COMERCIALIZADORA TECNO", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "ESE1", "rn": "76052927-3", "np": "SOC. CONC. AUTOPISTA NUEV", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "77337752-9", "np": "SOC. CONCESIONARIA RUTA 5", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "96820630-3", "np": "SOC.CONC.AUTOPISTA ACONCA", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "76496130-7", "np": "SOC.CONC.COSTANERA NORTE", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "96945440-8", "np": "SOC.CONCE.AUTOPISTA CENTR", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "96992030-1", "np": "SOC.CONCES VESP.NORTE EXP", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "76376061-8", "np": "SOCIEDAD CONCESIONARIA VE", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "76987741-K", "np": "SOCIEDAD GRUTRANS SPA", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "76425363-9", "np": "SOCIEDAD PLUSS DENTT S.A.", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "ESE1", "rn": "83628100-4", "np": "SONDA S.A.", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "78239560-2", "np": "SUPERMERCADO DEL NEUMATIC", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "96685690-4", "np": "TALBOT HOTELS S.A.", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "ESE1", "rn": "76589510-3", "np": "TECNICABLES LTDA.", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "ESE1", "rn": "90635000-9", "np": "TELEFONICA CHILE S.A.", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "76124890-1", "np": "Telef\u00f3nica M\u00f3viles Chile", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "96908870-3", "np": "TERMINAL PACIFICO SUR VAL", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "ESE1", "rn": "76576076-3", "np": "TRANSP.  FELIX ZAMORANO L", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "77175696-4", "np": "TRANSPORTES BUENA RUTA EI", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "77604194-7", "np": "TRANSPORTES MORA SPA", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "76264576-9", "np": "TRANSPORTES VIA EXPRESS L", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "ESE1", "rn": "96542490-3", "np": "TRECK S.A.", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "ESE1", "rn": "81821100-7", "np": "TURISMO COCHA S.A.", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "76058647-1", "np": "VERISURE CHILE SPA", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "79874200-0", "np": "VIA LIMPIA SPA", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "76351867-1", "np": "VIDRIERIA JOTACE LIMITADA", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "81756300-7", "np": "VILLAR HERMANOS S.A.", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "ESE1", "rn": "7904311-7", "np": "VILMA XIMENA ALIAGA CORTE", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "77112728-2", "np": "VINSON CONSULTING SPA.", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "76783680-5", "np": "WAYPOINT TELECOMUNICACION", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "78701740-1", "np": "WURTH CHILE LIMITADA", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "ESE1", "rn": "8409664-4", "np": "ZAMBON BERLAGOSKY MARCOS", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "ESE1", "rn": "99037000-1", "np": "ZURICH CHILE SEGURO GENER", "co": "SEGUROS", "tr": "FB60"}, {"e": "ESE1", "rn": "77223241-1", "np": "TATTERSALL SERVICIOS AUTOMOTRICES S A", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "7061578-9", "np": "IVAN DAVID ORTUZAR GALVEZ", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "ESE1", "rn": "77102287-1", "np": "TRANSPORTES BEGO\u00c3\u2018A FIERRO CARTAGENA E.I.R.L.", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "ESE1", "rn": "77108652-7", "np": "SOCIEDAD TRANSDAILLE LIMITADA", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "ESE1", "rn": "77461750-7", "np": "LIEBHERR CHILE SpA", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "ESE1", "rn": "77098840-3", "np": "CRANE SERVICE CHILE LTDA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "76834819-7", "np": "DESPAPELIZA SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "76320613-0", "np": "TIBA CHILE SPA", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "ESE1", "rn": "6272724-1", "np": "ROSENDO FRANCISCO GARATE PIZARRO", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "76410713-6", "np": "SAPADVANCE CHILE SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "77517603-2", "np": "RR GLOBAL SERVICE SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "9430174-2", "np": "JORGE WLADIMIR CONTRERAS ZORRILLA", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "78893290-1", "np": "COMERCIAL VIMO LTDA.", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "ESE1", "rn": "78716330-0", "np": "TRANSPORTE DE EXCEDENTES INDUSTRIALES Y DE CONSTRUCCION LTDA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "12180973-7", "np": "JOSE ALFONSO RODRIGUEZ CID", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "76276037-1", "np": "Fumigaciones y Servicios Ambientales SPA", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "76173410-5", "np": "QWANTEC INGENIER\u00c3\u008dA LTDA", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "ESE1", "rn": "8409664-4", "np": "MARCOS SIMON ZAMBON BERLAGOSKY", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "ESE1", "rn": "76408750-K", "np": "CARGO COMPASS CHILE SPA", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "ESE1", "rn": "76192151-7", "np": "TODO IZAJE SA", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "ESE1", "rn": "76879934-2", "np": "TECCIN SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "77663150-7", "np": "HOTELERA DIEGO DE ALMAGRO LTDA", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "ESE1", "rn": "77184144-9", "np": "INVERSIONES DON ALEJANDRO SPA", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "76401812-5", "np": "SOCIEDAD DE ASESORIAS DE RIESGO CREDIA SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "7904311-7", "np": "VILMA XIMENA DEL CARMEN ALIAGA CORTES", "co": "Estado de Pago", "tr": "FO/HES/MIRO"}, {"e": "ESE1", "rn": "9733818-3", "np": "HECTOR DAVID OPORTO JIMENEZ", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "ESE1", "rn": "9987739-1", "np": "SILVIA EDITH MARDONES TOLOZA", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "ESE1", "rn": "80565900-9", "np": "YOLITO BALART HNOS. LTDA.", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "ESE1", "rn": "78540190-5", "np": "IMPORTADORA NOVUS SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "81548400-2", "np": "MILAN FABJANOVIC SPA", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "ESE1", "rn": "76173258-7", "np": "Unnio Seguros Generales S.A.", "co": "SEGUROS", "tr": "FB60"}, {"e": "ESE1", "rn": "19202964-3", "np": "LUIS ROBERTO MORALES VARGAS", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "ESE1", "rn": "76119938-2", "np": "ALCANTARA FORMACION LIMITADA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "60910000-1", "np": "Universidad de Chile", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "94795000-2", "np": "CIA.CHILENA DE COMUNICACIONES S.A.", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "76723460-0", "np": "AGENCIA DE ADUANAS   JAIME URBINA Y CIA LTDA", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "ESE1", "rn": "76014538-6", "np": "SALCEDO  CIA LIMITADA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "89862200-2", "np": "LATAM AIRLINES GROUP S.A.", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "86731200-5", "np": "QUINTEC CHILE S.A.", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "78131420-K", "np": "INGENIERIA DESIMAT LIMITADA", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "ESE1", "rn": "96670840-9", "np": "DIMERC S. A.", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "ESE1", "rn": "76846325-5", "np": "MARCO AURELIO VEJAR VEGA, REPARACION, MANTENCION DE GENERADORES Y FABR", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "76359457-2", "np": "VIDRIOS Y ALUMINIOS ANTONIO SOTO VELASQUEZ SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "78379970-7", "np": "COMERCIAL RIO PUELO LIMITADA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "77680868-7", "np": "PSD CARGO SPA", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "ESE1", "rn": "76202110-2", "np": "AG.AD. PATRICIO SESNICH STEWART Y CIA.LTDA", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "ESE1", "rn": "85070200-4", "np": "SERGIO GAETE Y COMPA\u00c3\u2018IA LIMITADA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "83110800-2", "np": "SURLATINA AUDITORES LIMITADA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "76412909-1", "np": "Prodinsa S.A.", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "ESE1", "rn": "76188540-5", "np": "INSPECCION Y CERTIFICACION DE EQUIPOS LTDA. - CERTEQ LTDA.", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "77270640-5", "np": "LAVIN Y CIA. LTDA.", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "ESE1", "rn": "86117800-5", "np": "Gruas y Equipos Cruz del Sur S.A.", "co": "FACT.ESPEJO", "tr": "FB60"}, {"e": "ESE1", "rn": "76907629-8", "np": "BATERIAS INDUSTRIALES SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "76992186-9", "np": "INGENIER\u00c3\u008dA PT MORENO LIMITADA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "77409076-2", "np": "SERVICIO TECNICO DE MAQUINARIA JG LIMITADA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "76172595-5", "np": "MEDLOG CHILE S.A", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "ESE1", "rn": "76827061-9", "np": "TRANSPORTES JSV SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "60804000-5", "np": "SERVICIO NACIONAL DE ADUANAS", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "ESE1", "rn": "99579810-7", "np": "NEUMATICOS SANCAR LTDA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "76710429-4", "np": "COMERCIALIZADORA MAURICIO PASTENE VALLEJOS EMPRESA INDIVIDUAL DE RESPONSABILIDAD LIMITADA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "8534354-8", "np": "PEDRO RAUL ESCOBAR SANCHEZ", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "82728500-5", "np": "Ian Taylor Chile S.A.", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "ESE1", "rn": "76168859-6", "np": "MAQUINARIAS INDUSTRIALES ORFANOZ URRA SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "76582776-0", "np": "TRANSPORTES Y SERVICIOS INDUSTRIALES RCA SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "99560200-8", "np": "KREIS SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "77747889-3", "np": "MPC TRANSPORTES SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "79587350-3", "np": "EDITORA MICROBYTE SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "76720742-5", "np": "MANTENCION Y REPARACION FRICSOTEC SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "7560189-1", "np": "SERGIO ORLANDO FUENTES ANDRADE", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "76185386-4", "np": "SLI GROUP CHILE SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "76124256-3", "np": "SKL MAQUINARIAS SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "76297552-1", "np": "DEREMAQ SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "77350861-5", "np": "INMOBILIARIA E INVERSIONES LYNCH SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "76251391-9", "np": "RESTAURANT CHINA- PERU LIMITADA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "77744716-5", "np": "INVERSIONES KU SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "76821330-5", "np": "IMPERIAL S.A.", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "76426922-5", "np": "CCS SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "76159507-5", "np": "SOTO-AGUILAR Y SALCEDO LIMITADA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "76008162-0", "np": "SERVICIO INTEGRAL MAQUINARIAS LIMITADA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "76832379-8", "np": "EMPRESA DE MANTENCIONES Y REPARACIONES ESER Y COMPA\u00c3\u2018IA LIMITADA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "77041634-5", "np": "SUBCARGO SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "76862997-8", "np": "SOCIEDAD COMERCIAL HOTELERA L Y R SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "89005900-7", "np": "SOC.COMER. ANTUCO LTDA.", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "77504466-7", "np": "KAUPSAUR SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "77270485-2", "np": "SACO SHIPPING S.P.A.", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "ESE1", "rn": "77285385-8", "np": "INVERSIONES SAN MARTIN SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "96907830-9", "np": "Despegar.com Chile SpA", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "ESE1", "rn": "76113577-5", "np": "ATUI.CL SPA", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "ESE1", "rn": "76362278-9", "np": "COMERCIAL C Y C SUR LIMITADA", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "ESE1", "rn": "76026949-2", "np": "DISTRIBUIDORA ALPHA OMEGA SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "76574879-8", "np": "JETSMART AIRLINES SPA", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "ESE1", "rn": "77706263-8", "np": "ROBINSON SUAREZ CERDA SPA", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "ESE1", "rn": "12594062-5", "np": "SUSANA MARICELA GUARDA CASTILLO", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "ESE1", "rn": "80992000-3", "np": "Ultramar Agencia Mar\u00c3\u00adtima Ltda.", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "ESE1", "rn": "96870370-6", "np": "Accor Chile SA", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "ESE1", "rn": "77714476-6", "np": "ACU\u00c3\u2018A ASOCIADOS SPA", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "ESE1", "rn": "80409800-3", "np": "ELECTRICIDAD GOBANTES S.A", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "ESE1", "rn": "76364616-5", "np": "GASTRONOMIA DEL ALTO SpA", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "ESE1", "rn": "8999697-K", "np": "RICARDO ALBERTO FARIAS OLEA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "96796080-2", "np": "SEAPORT S.A.", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "ESE1", "rn": "76253418-5", "np": "SERVICIOS PROFESIONALES Y ASESORIAS CAROLINA YAZIGI WAISSBLUTH E.I.R.L", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "77938830-1", "np": "SITRANS ALM EXTRAPORTUARIOS LTDA.", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "ESE1", "rn": "76226297-5", "np": "SOCIEDAD INMOBILIARIA SAN AGUSTIN SPA", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "ESE1", "rn": "77184417-0", "np": "TOPSAFE SPA", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "ESE1", "rn": "83336400-6", "np": "COMERCIAL GOMILANDIA LTDA", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "ESE1", "rn": "76158513-4", "np": "DP WORLD SAN ANTONIO S.A.", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "ESE1", "rn": "8743537-7", "np": "HUGO EWALDO ESCHMANN SANDROCK", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "ESE1", "rn": "90193000-7", "np": "Empresa El Mercurio S.A.P.", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "76783249-4", "np": "DISTRIBUIDORA ELECTRONICA INDUSTRIAL SPA", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "ESE1", "rn": "77237355-4", "np": "HEARTDRAULIC SPA", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "ESE1", "rn": "76773286-4", "np": "INVERSIONES MAHUIDAN SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "76762740-8", "np": "SOC. COMERC. DE REPUESTOS S.P.A.", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "ESE1", "rn": "77685187-6", "np": "HOTELERA QUINCHAMALI SPA", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "ESE1", "rn": "96511460-2", "np": "Construmart S.A.", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "ESE1", "rn": "76762740-8", "np": "SOC. COMERC. DE REPUESTOS S.P.A.", "co": "RENDICI\u00d3N", "tr": "FB60"}, {"e": "ESE1", "rn": "76100885-4", "np": "Comercial Hernandez H Y P Ltda", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "89396900-4", "np": "DISTRIBUIDORA TECNICA ELECTRICA VITEL S.A.", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "76263058-3", "np": "COMERCIALIZADORA E IMPORTADORA BATTERYTRAC LIMITADA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "ESE1", "rn": "76543641-9", "np": "ILASA SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "76092343-5", "np": "303 EDITORIALES S.A.", "co": "MATERIALES BODEGA", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "77215640-5", "np": "Administradora de ventas al detalle limitada", "co": "RENDICION", "tr": "FB60"}, {"e": "GYE", "rn": "9458671-2", "np": "ANTONIO RAIMUNDO SOTO VELASQUEZ", "co": "Estado de pago", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "77815591-5", "np": "ARRIENDO DE MAQUINARIAS MOBILIFT SPA", "co": "Estado de pago", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "78216082-6", "np": "BEYER GLOBAL SERVICES LIMITADA", "co": "RENDICION", "tr": "FB60"}, {"e": "GYE", "rn": "77844751-7", "np": "COMERCIAL CIMMA SPA", "co": "RENDICION", "tr": "FB60"}, {"e": "GYE", "rn": "78070457-8", "np": "COMERCIAL RGP SPA", "co": "RENDICION", "tr": "FB60"}, {"e": "GYE", "rn": "76205153-2", "np": "COMERCIAL S R K Y COMPANIA LIMITADA", "co": "RENDICION", "tr": "FB60"}, {"e": "GYE", "rn": "77572299-1", "np": "COMERCIAL Y SERVICIOS PEREZ LIMITADA", "co": "RENDICION", "tr": "FB60"}, {"e": "GYE", "rn": "76433050-1", "np": "COMERCIALIZADORA J Y V LIMITADA", "co": "RENDICION", "tr": "FB60"}, {"e": "GYE", "rn": "76763737-3", "np": "COMERCIALIZADORA Y DISTRIBUIDORA ALFARO LIMITADA", "co": "RENDICION", "tr": "FB60"}, {"e": "GYE", "rn": "96823830-2", "np": "CONSTRUCTORA E INMOBILIARIA ARAME S.A.", "co": "RENDICION", "tr": "FB60"}, {"e": "GYE", "rn": "76981875-8", "np": "CONTEMPORA COMPANIA DE SEGUROS GENERALES S.A.", "co": "SEGUROS", "tr": "FB60"}, {"e": "GYE", "rn": "76118314-1", "np": "COVARRUBIAS Y CIA SPA", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "76804522-4", "np": "CRISVER AIR CLIMATIZACION LIMITADA", "co": "RENDICION", "tr": "FB60"}, {"e": "GYE", "rn": "76984642-5", "np": "DITECPRO SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "76568660-1", "np": "EASY RETAIL S.A. .-", "co": "RENDICION", "tr": "FB60"}, {"e": "GYE", "rn": "85541900-9", "np": "EDAPI S A", "co": "MATERIALES BODEGA", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "96896480-1", "np": "ELECTRAFK S.A.", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "GYE", "rn": "76372424-7", "np": "EMPRESAS GH SERVICIOS LIMITADA", "co": "RENDICION", "tr": "FB60"}, {"e": "GYE", "rn": "77312016-1", "np": "ESE MAQUINARIAS S.A.", "co": "RELACIONADAS", "tr": "FB60"}, {"e": "GYE", "rn": "76520324-4", "np": "EXCELLENTIUM CONSULTORES SPA", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "76274976-9", "np": "FARIZO Y MARTINEZ LIMITADA", "co": "RENDICION", "tr": "FB60"}, {"e": "GYE", "rn": "83364400-9", "np": "FERRETERIA EL METRO LIMITADA", "co": "RENDICION", "tr": "FB60"}, {"e": "GYE", "rn": "77887502-0", "np": "FERRETERIA HECTOR OPORTO JIMENEZ EIRL", "co": "RENDICION", "tr": "FB60"}, {"e": "GYE", "rn": "77150517-1", "np": "FREELOG FORWARDING SPA", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "GYE", "rn": "79733670-K", "np": "GONZALEZ Y MUNOZ LIMITADA", "co": "MATERIALES BODEGA", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "76734800-2", "np": "GRUAS MANITOWOC CRANE GROUP CHILE LTDA", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "78159800-3", "np": "GTD INTESIS S.A", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "77362962-5", "np": "HABITAINER SPA", "co": "RELACIONADAS", "tr": "FB60"}, {"e": "GYE", "rn": "99061000-2", "np": "HDI SEGUROS S.A.", "co": "SEGUROS", "tr": "FB60"}, {"e": "GYE", "rn": "19883840-3", "np": "IGNACIO ANTONIO PALOMINOS HERRERA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "78924030-2", "np": "IMPLEMENTOS S.A.", "co": "RENDICION", "tr": "FB60"}, {"e": "GYE", "rn": "77718463-6", "np": "INDEMAIN SPA", "co": "RENDICION", "tr": "FB60"}, {"e": "GYE", "rn": "70049100-5", "np": "Instituto Nacional de Normalizacion", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "76186685-0", "np": "INVERSIONES VALLE VERDE SPA", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "GYE", "rn": "76247147-7", "np": "INVERSIONES Y ASESORIAS CENTRO MEDICO DEL TRABAJADOR SPA", "co": "RENDICION", "tr": "FB60"}, {"e": "GYE", "rn": "79899520-0", "np": "INVERSIONES Y SERVICIOS TRANS-HUARA SPA", "co": "RENDICION", "tr": "FB60"}, {"e": "GYE", "rn": "77932785-K", "np": "LEASING RYM SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "77492648-8", "np": "LOS MAGNIFICOS SPA", "co": "RENDICION", "tr": "FB60"}, {"e": "GYE", "rn": "76681791-2", "np": "LUBRIFOODS SPA", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "GYE", "rn": "77378078-1", "np": "MANTENCIONES INTEGRALES GENESSIS SPA", "co": "RENDICION", "tr": "FB60"}, {"e": "GYE", "rn": "76020348-3", "np": "MAQUIPARTS SPA", "co": "RENDICION", "tr": "FB60"}, {"e": "GYE", "rn": "78286232-4", "np": "MONTAJES Y ESTRUCTURAS SPA", "co": "Estado de pago", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "76307580-K", "np": "MORRIS Y OPAZO SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "76952169-0", "np": "NAMALUA SPA", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "GYE", "rn": "77895414-1", "np": "NUEVA ERA INVERSIONES LP SPA", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "GYE", "rn": "13925391-4", "np": "OSCAR MICHEL TORRES SALAMANCA", "co": "RENDICION", "tr": "FB60"}, {"e": "GYE", "rn": "79848630-6", "np": "OSVALDO ANTONIO PEREZ E HIJOS LTDA", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "GYE", "rn": "80709800-4", "np": "PADRUNO BECKER Y CIA LTDA", "co": "RENDICION", "tr": "FB60"}, {"e": "GYE", "rn": "78211278-3", "np": "PARABRISAS JUAN CARLOS VERA BENAVIDES E.I.R.L.", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "9723124-9", "np": "PATRICIA ANGELICA VENEGAS MARTINEZ", "co": "RENDICION", "tr": "FB60"}, {"e": "GYE", "rn": "8861906-4", "np": "PATRICIO GREGORIO ESPINOZA AEDO", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "77330457-2", "np": "PEST SOLUTIONS SPA", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "96823070-0", "np": "POLYMERSHAPES CHILE S.A.", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "GYE", "rn": "77470480-9", "np": "PRINT CARE LIMITADA", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "GYE", "rn": "78044043-0", "np": "PROCEDE SPA", "co": "Estado de pago", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "76299244-2", "np": "PROTEKNICA S.A.", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "GYE", "rn": "76756768-5", "np": "SEGURIDAD INDUSTRIAL SPA", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "GYE", "rn": "77503439-4", "np": "SERVICIOS AUTOMOTRIZ  Y MAQUINARIAS JODOMART SPA", "co": "RENDICION", "tr": "FB60"}, {"e": "GYE", "rn": "78309691-9", "np": "SERVICIOS INTEGRALES DE ASEO Y VARIOS SIAV SPA", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "77586655-1", "np": "SERVICIOS JJ TWINS SPA", "co": "RENDICION", "tr": "FB60"}, {"e": "GYE", "rn": "79831980-9", "np": "SOC HOTELERA PENUELAS LIMITADA", "co": "RENDICION", "tr": "FB60"}, {"e": "GYE", "rn": "80925100-4", "np": "SOC MARITIMA Y COMERCIAL SOMARCO LTDA", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "GYE", "rn": "77458590-7", "np": "SOCIEDAD DISTRIBUIDORA DE PERNOS INDEPENDENCIA SPA", "co": "RENDICION", "tr": "FB60"}, {"e": "GYE", "rn": "77251280-5", "np": "SOCIEDAD NEWCHEM QUIMICA SPA", "co": "MATERIALES BODEGA", "tr": "MIGO/MIRO"}, {"e": "GYE", "rn": "76906413-3", "np": "SOCIEDAD TRANSPORTES GAMO LIMITADA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "96556930-8", "np": "SODEXO SOLUCIONES DE MOTIVACION CHILE S.A.", "co": "SERVICIOS", "tr": "FO/HES/MIRO"}, {"e": "GYE", "rn": "96792430-K", "np": "SODIMAC S.A.", "co": "RENDICION", "tr": "FB60"}, {"e": "GYE", "rn": "76062494-2", "np": "SYSTECH CHILE LIMITADA", "co": "RENDICION", "tr": "FB60"}, {"e": "GYE", "rn": "76271391-8", "np": "TAFAMUS CHILE SPA", "co": "RENDICION", "tr": "FB60"}, {"e": "GYE", "rn": "76007873-5", "np": "TERMINAL EXTRAPORTUARIO VALPARAISO S.A.", "co": "COMEX", "tr": "CARP. IMPORTACI\u00d3N/MIRO"}, {"e": "GYE", "rn": "77440114-8", "np": "TORNERIA BOKARI SPA", "co": "RENDICION", "tr": "FB60"}, {"e": "GYE", "rn": "77787955-3", "np": "TRANSPORTES B&P SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "78342719-2", "np": "TRANSPORTES DE CARGA POR CARRETERA RAMOS SPA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "76797240-7", "np": "TRANSPORTES TRANSAL LTDA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "76180092-2", "np": "TRANSPORTES Y GRUAS  RAIMUNDO LORENZO LIZAMA PEREZ EIRL", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "76941657-9", "np": "VENTAS POR INTERNET DE MARCOS E DE FREIT", "co": "RENDICION", "tr": "FB60"}, {"e": "GYE", "rn": "77174010-3", "np": "VIAL Y COMPANIA LIMITADA", "co": "SERVICIOS", "tr": "OC/HES/MIRO"}, {"e": "GYE", "rn": "78560030-4", "np": "ZEPEDA Y VECCHIOLA Y COMPANIA LTDA", "co": "RENDICION", "tr": "FB60"}];
+var RESP    = {"BANCO": "Madelaine Gonzalez", "FACT.ESPEJO": "Moises Alverar", "COMEX": "Alfonso Lorca", "EMP. RELACIONADAS": "Alfonso Lorca", "Estado de Pago": "Madelaine Gonzalez", "Estado de pago": "Madelaine Gonzalez", "MATERIALES BODEGA": "Moises Alverar", "RENDICION": "Madelaine Gonzalez", "RENDICION ": "Madelaine Gonzalez", "SEGUROS": "Alfonso Lorca", "SERVICIOS": "Madelaine Gonzalez", "RELACIONADAS": "Alfonso Lorca"};
+var EMPS  = ['ESE1','GYE','MCSP','ETSP'];
+var RUT_EMP = {'77312016':'ESE1','86117800':'GYE','76453754':'MCSP','76453759':'ETSP'};
+var EF = {ESE1:'ESE MAQUINARIAS S.A.',GYE:'GRUAS Y EQUIPOS CRUZ DEL SUR S.A.',MCSP:'MAQUINARIAS CRUZ DEL SUR SPA',ETSP:'EMPRESA TECNICA ASESORA CONSTRUCCION SPA'};
+var MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+var PG = 75;
+var activeMesActivo = '';
+var siiData  = {};
+var historico = {};
+var sapData  = {};
+var icData   = {};
+var mLU = {}, rLU = {};
+var allRec = [], filtRec = [], page = 1;
+
+function lss(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+function lsl(k){try{var x=localStorage.getItem(k);return x?JSON.parse(x):null;}catch(e){return null;}}
+
+window.onload = function(){
+  buildLU();
+  var sm2=lsl('v6maestro'); if(sm2&&sm2.length){MAESTRO=sm2;buildLU();setSt('maestro','ok','\u2713 Maestro guardado');setDt('maestro',sm2.length+' proveedores');}
+  var sr=lsl('v6resp'); if(sr&&Object.keys(sr).length){Object.keys(sr).forEach(function(k){rLU[k.trim().toUpperCase()]=sr[k];});setSt('resp','ok','\u2713 Resp guardados');setDt('resp',Object.keys(sr).length+' conceptos');}
+  var ss=lsl('v6sap'); if(ss){sapData=ss;}
+  loadHistorico();
+  var saved=lsl('v6rec');
+  if(saved&&saved.length){
+    allRec=saved;
+    var lm=lsl('v6mesActivo');
+    if(lm){activeMesActivo=lm;var sel=document.getElementById('sel-mes-activo');if(sel)sel.value=lm;var hdr=document.getElementById('hdr-mes-activo');if(hdr)hdr.textContent=(lm||'TODOS').toUpperCase();}
+    applyF();renderResumen();renderMaestro();
+    setMsg('\u2713 Datos restaurados. Historico: '+Object.keys(historico).length+' periodos.','ok');
+  }
+  renderHistoricoGrid();
+  checkBtn();
+};
+
+function buildLU(){
+  mLU={};rLU={};
+  MAESTRO.forEach(function(r){var rn=nr(r.rn||'');var co=r.co||'';var tr=r.tr||'';mLU[(r.e||'_')+'|'+rn]={co:co,tr:tr};if(!mLU['_|'+rn])mLU['_|'+rn]={co:co,tr:tr};});
+  Object.keys(RESP).forEach(function(k){rLU[k.trim().toUpperCase()]=RESP[k];});
+}
+function getCat(emp,rut){var rn=nr(rut);return mLU[emp+'|'+rn]||mLU['_|'+rn]||{co:'',tr:''};}
+function getResp(co){if(!co)return '';return rLU[co.trim().toUpperCase()]||'';}
+function nr(s){return String(s).replace(/[.\-]/g,'').toUpperCase().trim();}
+
+function dov(e,el){e.preventDefault();el.classList.add('drag');}
+function dlv(el){el.classList.remove('drag');}
+function dropF(e,t){e.preventDefault();e.currentTarget.classList.remove('drag');loadFiles(e.dataTransfer.files,t);}
+
+function loadFiles(files,type){
+  if(!files||!files.length)return;
+  if(type==='sii'){
+    Array.from(files).forEach(function(f){readTxt(f,function(txt){parseSII(txt,f.name);updSIISt();checkBtn();});});
+  } else if(type==='ic'){
+    readTxt(files[0],function(txt){parseIC(txt);setSt('ic','ok','\u2713 '+files[0].name);setDt('ic',Object.keys(icData).length+' entradas IC');document.getElementById('box-ic').className='upload-box ok';toast('\u2713 Iconstruye: '+Object.keys(icData).length+' docs','ok');});
+  } else if(type==='maestro'){
+    readTxt(files[0],function(txt){var rows=parseMaestroCsv(txt);if(rows.length){MAESTRO=rows;buildLU();lss('v6maestro',rows);document.getElementById('box-maestro').className='upload-box ok';setSt('maestro','ok','\u2713 '+files[0].name);setDt('maestro',rows.length+' proveedores');toast('\u2713 Maestro: '+rows.length+' proveedores','ok');renderMaestro();}else{setSt('maestro','warn','\u26A0 Formato: Empresa/RUT/Concepto/Tratamiento');}});
+  } else if(type==='resp'){
+    readTxt(files[0],function(txt){var rows=parseRespCsv(txt);if(rows&&Object.keys(rows).length){Object.keys(rows).forEach(function(k){rLU[k.trim().toUpperCase()]=rows[k];});lss('v6resp',rows);document.getElementById('box-resp').className='upload-box ok';setSt('resp','ok','\u2713 '+files[0].name);setDt('resp',Object.keys(rows).length+' conceptos');toast('\u2713 Responsables actualizados','ok');}else{setSt('resp','warn','\u26A0 Columnas: Concepto / A cargo de:');}});
+  } else if(type.indexOf('sap-')===0){
+    var emp=type.slice(4);
+    readTxt(files[0],function(txt){var rows=parseSAP(txt,emp);sapData[emp]=rows;document.getElementById('box-sap-'+emp).className='upload-box ok';setSt('sap-'+emp,'ok','\u2713 '+files[0].name);setDt('sap-'+emp,rows.length+' registros');var loaded=EMPS.filter(function(e){return sapData[e]&&sapData[e].length;});setDot('sap',loaded.length===EMPS.length?'ok':'warn');document.getElementById('lbl-sap').textContent='SAP: '+loaded.join(', ')+(loaded.length===EMPS.length?' \u2713':'');lss('v6sap',sapData);toast('\u2713 SAP '+emp+': '+rows.length+' docs','ok');checkBtn();});
+  }
+}
+
+function readTxt(f,cb){
+  var ext=f.name.split('.').pop().toLowerCase();
+  if((ext==='xlsx'||ext==='xls')&&typeof XLSX!=='undefined'){
+    var r=new FileReader();r.onload=function(e){try{var wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});cb(XLSX.utils.sheet_to_csv(wb.Sheets[wb.SheetNames[0]],{FS:',',RS:'\n'}));}catch(err){var r2=new FileReader();r2.onload=function(e2){cb(e2.target.result);};r2.readAsText(f,'ISO-8859-1');}};r.readAsArrayBuffer(f);
+  } else {var r=new FileReader();r.onload=function(e){cb(e.target.result);};r.readAsText(f,'ISO-8859-1');}
+}
+
+// SII: 4 estados
+// REGISTRO   = debe ir al libro SAP → Contabilizado / Pendiente SAP
+// PENDIENTE  = mes cerrado queda en 0 → solo informativo
+// NO_INCLUIR = no va al libro → solo informativo
+// RECLAMADO  = no va al libro → solo informativo
+function parseSII(txt,fname){
+  var fn=fname.toUpperCase().replace('.CSV','');
+  var estado='Registrado';
+  if(fn.indexOf('NO_INCLUIR')>=0||fn.indexOf('NOINCLUIR')>=0)estado='NoIncluir';
+  else if(fn.indexOf('PENDIENTE')>=0)estado='Pendiente';
+  else if(fn.indexOf('RECLAMADO')>=0)estado='Reclamado';
+  else if(fn.indexOf('REGISTRO')>=0)estado='Registrado';
+
+  var emp=null;
+  Object.keys(RUT_EMP).forEach(function(rut){if(fn.indexOf(rut.replace('-',''))>=0||fn.indexOf(rut)>=0)emp=RUT_EMP[rut];});
+  if(!emp){toast('\u26A0 No se detecto empresa en: '+fname,'warn');return;}
+  if(!siiData[emp])siiData[emp]={Registrado:[],Pendiente:[],Reclamado:[],NoIncluir:[]};
+
+  var lines=txt.split('\n');
+  var clean=lines.filter(function(l){return l.trim();}).map(function(l){return l.replace(/;+$/,'');});
+  var sep=clean[0]&&clean[0].indexOf(';')>=0?';':',';
+  var hdr=clean[0].split(sep).map(function(c){return c.trim().replace(/"/g,'');});
+  function fi(n){return hdr.findIndex(function(x){return x===n;});}
+  var ix={td:fi('Tipo Doc'),rut:fi('RUT Proveedor'),rs:fi('Razon Social'),f:fi('Folio'),fe:fi('Fecha Docto'),ne:fi('Monto Neto'),iv:fi('Monto IVA Recuperable'),to:fi('Monto Total')};
+  var mesCarga=document.getElementById('sel-mes-carga')?document.getElementById('sel-mes-carga').value:'';
+  var rows=[];
+  for(var i=1;i<clean.length;i++){
+    var p=scsv(clean[i],sep);if(p.length<5)continue;
+    var rut=gv(p,ix.rut);var folio=gv(p,ix.f);
+    if(!rut||!folio||folio==='undefined')continue;
+    rows.push({e:emp,mes:mesCarga,td:gv(p,ix.td),rut:rut,rn:nr(rut),rs:gv(p,ix.rs).substring(0,45),f:folio,fecha:gv(p,ix.fe).substring(0,10),n:pm(p[ix.ne]),iv:pm(p[ix.iv]),t:pm(p[ix.to]),estadoSII:estado,estadoCruce:'',docSAP:'',fp:'',ref:''});
+  }
+  siiData[emp][estado]=rows;
+}
+
+function updSIISt(){
+  var tot=0;var loaded=[];
+  EMPS.forEach(function(e){
+    if(!siiData[e])return;
+    var n=0;var sts=[];
+    ['Registrado','Pendiente','Reclamado','NoIncluir'].forEach(function(s){var c=(siiData[e][s]||[]).length;if(c){n+=c;sts.push(s.substring(0,3)+':'+c);}});
+    var el=document.getElementById('ss-'+e);
+    if(el){if(n){el.style.color='var(--green)';el.textContent=n+' ('+sts.join(', ')+')';}else{el.style.color='var(--text4)';el.textContent='Sin archivos';}}
+    if(n){tot+=n;loaded.push(e);}
+  });
+  if(loaded.length){
+    setDot('sii','ok');
+    document.getElementById('lbl-sii').textContent='SII: '+tot+' docs ('+loaded.join(', ')+')';
+    setSt('sii','ok','\u2713 '+tot+' docs SII cargados');
+    setDt('sii',loaded.join(', ')+(loaded.length===4?' \u2713 4/4':' '+loaded.length+'/4'));
+    document.getElementById('box-sii').className='upload-box ok';
+    var btnSave=document.getElementById('btn-save-mes');if(btnSave)btnSave.disabled=false;
+    toast('\u2713 SII: '+tot+' documentos','ok');
+  }
+  // Siempre verificar boton aunque no haya loaded
+  setTimeout(checkBtn,100);
+}
+
+function parseSAP(txt,emp){
+  var rows=[];var lines=txt.split('\n');
+  var skip=['Total','LIBRO DE COMPRAS','F. Docto','Nombre','Tipo Doc'];
+  for(var i=0;i<lines.length;i++){
+    var ln=lines[i];var bad=false;
+    for(var k=0;k<skip.length;k++){if(ln.indexOf(skip[k])>=0){bad=true;break;}}
+    if(bad)continue;
+    var parts=ln.split('\t').map(function(p){return p.trim();}).filter(Boolean);
+    if(parts.length<4)continue;
+    var rut=null;for(var j=0;j<parts.length;j++){if(/^\d{1,2}\.\d{3}\.\d{3}-[\dkK]$/.test(parts[j])){rut=parts[j];break;}}
+    if(!rut)continue;
+    var fecha=null;for(var j=0;j<parts.length;j++){if(/^\d{2}\.\d{2}\.\d{4}$/.test(parts[j])){fecha=parts[j];break;}}
+    if(!fecha)continue;
+    var fi=parts.indexOf(fecha);var nDoc=(parts[fi+1]||'').replace(/^0+/,'');
+    var amts=[];for(var j=0;j<parts.length;j++){var v=parseFloat(parts[j].replace(/\./g,'').replace(',','.'));if(!isNaN(v)&&v!==0)amts.push(v);}
+    // Extraer mes desde fecha DD.MM.YYYY
+    var sapMesNum=fecha.substring(3,5); // '02' de '28.02.2026'
+    var sapMesNom=(['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'])[parseInt(sapMesNum,10)]||'';
+    rows.push({e:emp,rut:rut,rn:nr(rut),f:nDoc,fecha:fecha,mes:sapMesNom,n:amts.length>=3?amts[amts.length-3]:0,iv:amts.length>=2?amts[amts.length-2]:0,t:amts[amts.length-1]||0,docSAP:parts[0]||''});
+  }
+  return rows;
+}
+
+function parseIC(txt){
+  icData={};var lines=txt.split('\n');if(!lines.length)return;
+  var sep=lines[0].indexOf(';')>=0?';':',';
+  var h=lines[0].split(sep).map(function(s){return s.trim().replace(/"/g,'');});
+  var iFolio=h.findIndex(function(x){return x==='Folio';});
+  var iRutEm=h.findIndex(function(x){return x.indexOf('Rut')>=0&&x.indexOf('Emisor')>=0;});
+  var iRutRec=h.findIndex(function(x){return x.indexOf('Rut')>=0&&x.indexOf('Receptor')>=0;});
+  var iRef=h.findIndex(function(x){return x==='Referencias';});
+  var iFP=h.findIndex(function(x){return x==='Forma de Pago';});
+  for(var i=1;i<lines.length;i++){
+    var p=scsv(lines[i],sep);if(p.length<5)continue;
+    var rr=nr(gv(p,iRutRec));var emp=null;
+    Object.keys(RUT_EMP).forEach(function(r){if(rr.indexOf(r.replace('-',''))===0)emp=RUT_EMP[r];});
+    if(!emp)continue;
+    var folio=gv(p,iFolio);var rutEm=gv(p,iRutEm);if(!folio)continue;
+    icData[emp+'|'+nr(rutEm)+'|'+folio]={fp:iFP>=0?gv(p,iFP):'',ref:iRef>=0?gv(p,iRef).substring(0,80):''};
+  }
+}
+
+// HISTORICO ACUMULADO
+function guardarMes(){
+  var mes=document.getElementById('sel-mes-carga').value;
+  var guardados=0;
+  EMPS.forEach(function(emp){
+    if(!siiData[emp])return;
+    var tiene=['Registrado','Pendiente','Reclamado','NoIncluir'].some(function(st){return (siiData[emp][st]||[]).length>0;});
+    if(!tiene)return;
+    var key=emp+'|'+mes;
+    historico[key]={Registrado:(siiData[emp]['Registrado']||[]).slice(),Pendiente:(siiData[emp]['Pendiente']||[]).slice(),Reclamado:(siiData[emp]['Reclamado']||[]).slice(),NoIncluir:(siiData[emp]['NoIncluir']||[]).slice()};
+    lss('v6hist_'+key,historico[key]);
+    guardados++;
+  });
+  if(!guardados){document.getElementById('save-mes-msg').textContent='\u26A0 No hay archivos SII cargados';document.getElementById('save-mes-msg').style.color='var(--yellow)';return;}
+  siiData={};
+  EMPS.forEach(function(e){var el=document.getElementById('ss-'+e);if(el){el.textContent='Sin archivos';el.style.color='var(--text4)';}});
+  document.getElementById('save-mes-msg').textContent='\u2713 '+mes+' guardado ('+guardados+' empresas)';
+  document.getElementById('save-mes-msg').style.color='var(--green)';
+  var b=document.getElementById('btn-save-mes');if(b)b.disabled=true;
+  setSt('sii','ok','\u2713 '+mes+' guardado');
+  renderHistoricoGrid();checkBtn();
+  toast('✓ '+mes+' guardado en historico','ok');
+  // Marcar empresas como guardadas visualmente
+  EMPS.forEach(function(e){
+    var sc=document.getElementById('ss-'+e);
+    if(sc&&historico[e+'|'+mes]){
+      var cnt=['Registrado','Pendiente','Reclamado','NoIncluir'].reduce(function(a,st){return a+(historico[e+'|'+mes][st]||[]).length;},0);
+      if(cnt>0){sc.style.color='var(--green)';sc.textContent='✓ '+cnt+' guardados en historico';}
+    }
+  });
+}
+
+function loadHistorico(){
+  historico={};
+  try{for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&k.indexOf('v6hist_')===0){var d=lsl(k);if(d)historico[k.replace('v6hist_','')]=d;}}}catch(e){}
+  renderHistoricoGrid();
+}
+
+function renderHistoricoGrid(){
+  var el=document.getElementById('historico-grid');if(!el)return;
+  var sizeEl=document.getElementById('hist-size');
+  var mp={};
+  Object.keys(historico).forEach(function(key){var parts=key.split('|');var emp=parts[0];var mes=parts[1];if(!mp[mes])mp[mes]={};var cnt=0;['Registrado','Pendiente','Reclamado','NoIncluir'].forEach(function(st){cnt+=(historico[key][st]||[]).length;});mp[mes][emp]=cnt;});
+  if(!Object.keys(mp).length){el.innerHTML='<div style="font-size:9px;color:var(--text4);padding:8px">\u23F3 Aun no hay meses guardados. Carga archivos SII de cada mes y presiona "Guardar mes".</div>';if(sizeEl)sizeEl.textContent='';return;}
+  var ordered=MESES.filter(function(m){return mp[m];});
+  el.innerHTML=ordered.map(function(mes){
+    var ed=mp[mes];var tot=Object.keys(ed).reduce(function(a,e){return a+(ed[e]||0);},0);var all=EMPS.every(function(e){return ed[e]>0;});var bc=all?'var(--green)':'var(--yellow)';
+    var badges=EMPS.map(function(e){var n=ed[e]||0;return '<span style="font-size:8px;padding:1px 5px;border-radius:3px;background:'+(n>0?'rgba(52,211,153,.15)':'rgba(255,255,255,.05)')+';color:'+(n>0?'var(--green)':'var(--text4)')+'">'+e+(n>0?' \u2713':'')+'</span>';}).join(' ');
+    return '<div style="background:var(--bg3);border:1px solid '+bc+';border-radius:6px;padding:8px 10px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span style="font-weight:700;color:'+(all?'var(--green)':'var(--yellow)')+'">&#128197; '+mes+'</span><span style="font-size:8px;color:var(--text3)">'+tot+' docs</span></div><div style="display:flex;gap:4px;flex-wrap:wrap">'+badges+'</div><button onclick="borrarMes(\''+mes+'\')" style="margin-top:5px;background:none;border:none;color:var(--text4);font-size:8px;cursor:pointer;padding:0">\u2715 Borrar</button></div>';
+  }).join('');
+  try{var size=0;for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&k.indexOf('v6')===0)size+=localStorage.getItem(k).length;}if(sizeEl)sizeEl.textContent='~'+(size/1024).toFixed(0)+' KB usados';}catch(e){}
+  // Update total badge
+  var mesesCount=Object.keys(mp).length;
+  var badge=document.getElementById('hist-total-badge');
+  if(badge){
+    if(mesesCount>0){
+      badge.textContent=mesesCount+' mes'+(mesesCount>1?'es':'')+' guardado'+(mesesCount>1?'s':'');
+      badge.style.background='rgba(52,211,153,0.15)';
+      badge.style.borderColor='var(--green)';
+      badge.style.color='var(--green)';
+    } else {
+      badge.textContent='0 meses guardados';
+      badge.style.background='var(--bg3)';
+      badge.style.borderColor='var(--border)';
+      badge.style.color='var(--text3)';
+    }
+  }
+}
+
+function borrarMes(mes){
+  if(!confirm('Borrar '+mes+' del historico?'))return;
+  EMPS.forEach(function(emp){try{localStorage.removeItem('v6hist_'+emp+'|'+mes);}catch(e){}delete historico[emp+'|'+mes];});
+  renderHistoricoGrid();toast('\u2713 '+mes+' eliminado','ok');
+}
+
+function borrarHistorico(){
+  if(!confirm('Borrar TODO el historico SII?\n(Maestro y Responsables no se borran)'))return;
+  try{var td=[];for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&(k.indexOf('v6hist_')===0||k==='v6rec'||k==='v6sap'))td.push(k);}td.forEach(function(k){localStorage.removeItem(k);});}catch(e){}
+  historico={};allRec=[];sapData={};filtRec=[];
+  renderHistoricoGrid();
+  document.getElementById('tbl-body').innerHTML='';document.getElementById('stat-cards').innerHTML='';
+  toast('\u2713 Historico borrado','ok');
+}
+
+function updateMesActivo(){
+  activeMesActivo=document.getElementById('sel-mes-activo').value;
+  var hdr=document.getElementById('hdr-mes-activo');if(hdr)hdr.textContent=(activeMesActivo||'TODOS').toUpperCase();
+  lss('v6mesActivo',activeMesActivo);applyF();renderResumen();
+}
+
+// PROCESAR
+function procesar(){
+  checkBtn(); // re-verify on each attempt
+  var hasSII=Object.keys(siiData).some(function(e){return Object.keys(siiData[e]).some(function(s){return siiData[e][s].length>0;});})||Object.keys(historico).length>0;
+  if(!hasSII){toast('Carga primero los archivos SII o guarda un mes','warn');return;}
+  if(!Object.keys(sapData).length){toast('Carga al menos un archivo SAP','warn');return;}
+  // Auto-guardar buffer actual al historico si hay datos sin guardar
+  var bufferTiene=Object.keys(siiData).some(function(e){return Object.keys(siiData[e]).some(function(s){return siiData[e][s].length>0;});});
+  if(bufferTiene){
+    var mes=document.getElementById('sel-mes-carga').value;
+    EMPS.forEach(function(emp){
+      if(!siiData[emp])return;
+      var tiene=['Registrado','Pendiente','Reclamado','NoIncluir'].some(function(st){return (siiData[emp][st]||[]).length>0;});
+      if(!tiene)return;
+      var key=emp+'|'+mes;
+      historico[key]={Registrado:(siiData[emp]['Registrado']||[]).slice(),Pendiente:(siiData[emp]['Pendiente']||[]).slice(),Reclamado:(siiData[emp]['Reclamado']||[]).slice(),NoIncluir:(siiData[emp]['NoIncluir']||[]).slice()};
+      lss('v6hist_'+key,historico[key]);
+    });
+    renderHistoricoGrid();
+    toast('✓ '+mes+' auto-guardado en historico antes de procesar','ok');
+  }
+
+  document.getElementById('btn-proc').disabled=true;
+  document.getElementById('prog-wrap').style.display='block';
+  setP(5,'Iniciando...');
+
+  setTimeout(function(){
+    // sapLU con clave por mes: emp|mes|rn|folio (match exacto de periodo)
+    // tambien guardamos emp|rn|folio para fallback tipo 914 etc.
+    var sapLU={};     // emp|rn|folio → docSAP (sin filtro mes, para compatibilidad)
+    var sapLUmes={};  // emp|mes|rn|folio → docSAP (filtrado por mes)
+    Object.keys(sapData).forEach(function(emp){
+      (sapData[emp]||[]).forEach(function(r){
+        sapLU[emp+'|'+r.rn+'|'+r.f]=r.docSAP||r.f;
+        if(r.mes)sapLUmes[emp+'|'+r.mes+'|'+r.rn+'|'+r.f]=r.docSAP||r.f;
+      });
+    });
+    setP(25,'Consolidando historico SII...');
+
+    // Merge historico + buffer actual
+    var siiSrc={};
+    Object.keys(historico).forEach(function(key){
+      var parts=key.split('|');var emp=parts[0];
+      if(!siiSrc[emp])siiSrc[emp]={Registrado:[],Pendiente:[],Reclamado:[],NoIncluir:[]};
+      ['Registrado','Pendiente','Reclamado','NoIncluir'].forEach(function(st){(historico[key][st]||[]).forEach(function(r){siiSrc[emp][st].push(r);});});
+    });
+    var mesCarga=document.getElementById('sel-mes-carga').value;
+    EMPS.forEach(function(emp){
+      if(!siiData[emp])return;
+      if(!siiSrc[emp])siiSrc[emp]={Registrado:[],Pendiente:[],Reclamado:[],NoIncluir:[]};
+      ['Registrado','Pendiente','Reclamado','NoIncluir'].forEach(function(st){
+        if((siiData[emp][st]||[]).length>0){siiSrc[emp][st]=siiSrc[emp][st].filter(function(r){return r.mes!==mesCarga;});siiData[emp][st].forEach(function(r){siiSrc[emp][st].push(r);});}
+      });
+    });
+
+    setP(50,'Cruzando SII vs SAP...');
+    allRec=[];var siiLU={};
+
+    EMPS.forEach(function(emp){
+      if(!siiSrc[emp])return;
+      ['Registrado','Pendiente','Reclamado','NoIncluir'].forEach(function(estado){
+        (siiSrc[emp][estado]||[]).forEach(function(r){
+          var cat=getCat(emp,r.rut);r.co=cat.co;r.tr=cat.tr;r.resp=getResp(cat.co);
+          var ic=icData[emp+'|'+r.rn+'|'+r.f]||{fp:'',ref:''};r.fp=ic.fp;r.ref=ic.ref;
+          var enSAP=!!sapLU[emp+'|'+r.rn+'|'+r.f];
+          // LOGICA:
+          // REGISTRO + en SAP   = Contabilizado (OK)
+          // REGISTRO + NO SAP   = Pendiente SAP  <-- ACCION REQUERIDA
+          // PENDIENTE + en SAP  = Contabilizado
+          // PENDIENTE + NO SAP  = Pendiente SII  <-- solo informativo
+          // NOINCLUIR + en SAP  = Contabilizado
+          // NOINCLUIR + NO SAP  = No Incluir     <-- solo informativo
+          // RECLAMADO + en SAP  = Contabilizado
+          // RECLAMADO + NO SAP  = Reclamado      <-- solo informativo
+          // Cruce SAP: usar clave con mes si disponible (evita falsos pendientes de otros meses)
+          var sapKeyMes = r.mes ? (emp+'|'+r.mes+'|'+r.rn+'|'+r.f) : null;
+          var enSAPmes  = sapKeyMes ? !!sapLUmes[sapKeyMes] : false;
+          var enSAP     = enSAPmes || !!sapLU[emp+'|'+r.rn+'|'+r.f];
+          var docSAPval = enSAPmes ? sapLUmes[sapKeyMes] : (sapLU[emp+'|'+r.rn+'|'+r.f]||'');
+
+          // FIX: Total = 0 → Sin Valor (no aplica contabilizar)
+          if(Math.abs(r.t)===0&&Math.abs(r.n)===0){
+            r.estadoCruce='Sin Valor';
+          }
+          // FIX: Tipo 914 / RUT 97080000-K = Declaracion de Ingreso → match por monto
+          else if(String(r.td)==='914'||nr(r.rut).indexOf('97080000K')===0){
+            var sapEmp=sapData[emp]||[];
+            var matchSAP=sapEmp.find(function(s){return Math.abs(s.t)===Math.abs(r.t)&&Math.abs(s.t)>0&&(!r.mes||!s.mes||s.mes===r.mes);});
+            if(matchSAP){r.estadoCruce='Contabilizado';r.docSAP=matchSAP.docSAP||matchSAP.f;}
+            else if(estado==='Registrado'){r.estadoCruce='Pendiente SAP';}
+            else{r.estadoCruce='No Incluir';}
+          }
+          else if(estado==='Registrado'){r.estadoCruce=enSAP?'Contabilizado':'Pendiente SAP';r.docSAP=enSAP?docSAPval:'';}
+          else if(estado==='Pendiente'){r.estadoCruce=enSAP?'Contabilizado':'Pendiente SII';if(enSAP)r.docSAP=docSAPval;}
+          else if(estado==='NoIncluir'){r.estadoCruce=enSAP?'Contabilizado':'No Incluir';if(enSAP)r.docSAP=docSAPval;}
+          else if(estado==='Reclamado'){r.estadoCruce=enSAP?'Contabilizado':'Reclamado';if(enSAP)r.docSAP=docSAPval;}
+          siiLU[emp+'|'+r.rn+'|'+r.f]=true;
+          allRec.push(r);
+        });
+      });
+    });
+
+    setP(75,'Buscando Solo SAP...');
+    // Meses que tenemos en SII (historico + buffer)
+    var mesesSII={};
+    Object.keys(historico).forEach(function(key){var mes=key.split('|')[1];if(mes)mesesSII[mes]=true;});
+    if(document.getElementById('sel-mes-carga')){var mc=document.getElementById('sel-mes-carga').value;if(mc)mesesSII[mc]=true;}
+
+    Object.keys(sapData).forEach(function(emp){
+      (sapData[emp]||[]).forEach(function(r){
+        // Solo marcar como Solo SAP si su mes esta cargado en SII
+        // Si el mes del SAP no esta en SII historico → ignorar (es de otro periodo)
+        if(r.mes&&!mesesSII[r.mes])return;
+        if(!siiLU[emp+'|'+r.rn+'|'+r.f]){
+          var cat=getCat(emp,r.rut);
+          allRec.push({e:emp,mes:r.mes||'',td:'',rut:r.rut,rn:r.rn,rs:'',f:r.f,fecha:r.fecha,n:r.n,iv:r.iv,t:r.t,estadoSII:'Solo SAP',estadoCruce:'Solo SAP',co:cat.co,tr:cat.tr,resp:getResp(cat.co),docSAP:r.docSAP||'',fp:'',ref:''});
+        }
+      });
+    });
+
+    // ── RECONCILIACION FINAL: Pendiente SAP + Solo SAP mismo proveedor+monto → Contabilizado ──
+    setP(82,'Reconciliando Pendiente SAP vs Solo SAP...');
+    var pendSAP  = allRec.filter(function(r){return r.estadoCruce==='Pendiente SAP';});
+    var soloSAP  = allRec.filter(function(r){return r.estadoCruce==='Solo SAP';});
+
+    pendSAP.forEach(function(pend){
+      // Buscar en Solo SAP: mismo emp + mismo rn + mismo monto total
+      var match = soloSAP.find(function(solo){
+        return solo.e === pend.e
+          && solo.rn === pend.rn
+          && Math.abs(solo.t) === Math.abs(pend.t)
+          && Math.abs(solo.t) > 0
+          && solo.estadoCruce === 'Solo SAP'; // no usar el mismo dos veces
+      });
+      if(match){
+        pend.estadoCruce = 'Contabilizado';
+        pend.docSAP      = match.docSAP || match.f || 'Match monto';
+        pend.matchNota   = 'Folio SAP: '+match.f+' (match por monto)';
+        match.estadoCruce = 'Contabilizado'; // marcar el Solo SAP como usado
+        match.matchNota   = 'Folio SII: '+pend.f+' (match por monto)';
+      }
+    });
+
+    setP(90,'Guardando...');lss('v6rec',allRec);lss('v6mesActivo',activeMesActivo);setP(100,'Listo!');
+
+    setTimeout(function(){
+      document.getElementById('prog-wrap').style.display='none';document.getElementById('btn-proc').disabled=false;
+      applyF();renderResumen();renderMaestro();
+      var c=allRec.filter(function(r){return r.estadoCruce==='Contabilizado';}).length;
+      var p=allRec.filter(function(r){return r.estadoCruce==='Pendiente SAP';}).length;
+      var ni=allRec.filter(function(r){return r.estadoCruce==='No Incluir';}).length;
+      var ps=allRec.filter(function(r){return r.estadoCruce==='Pendiente SII';}).length;
+      var re=allRec.filter(function(r){return r.estadoCruce==='Reclamado';}).length;
+      setMsg('\u2713 '+allRec.length+' | '+c+' OK | '+p+' pend.SAP | '+ni+' no incl. | '+ps+' pend.SII | '+re+' recl.','ok');
+      toast('\u2713 Cruce completado: '+allRec.length+' docs','ok');
+      setTimeout(function(){showTab('cruce',document.querySelectorAll('.tab-btn')[1]);},500);
+    },300);
+  },50);
+}
+
+// RENDER TABLE
+function applyF(){
+  page=1;
+  var fe=document.getElementById('f-emp').value;
+  var fs=document.getElementById('f-sii').value;
+  var fc_=document.getElementById('f-cruce').value;
+  var ft=document.getElementById('f-tipo').value;
+  var fcat=document.getElementById('f-cat').value;
+  var fq=document.getElementById('f-q').value.toLowerCase();
+  filtRec=allRec.filter(function(r){
+    // Solo filtrar por mes si el registro tiene mes asignado Y el usuario filtró por mes
+    if(activeMesActivo&&r.mes&&r.mes!==''&&r.mes!==activeMesActivo)return false;
+    if(fe!=='Todas'&&r.e!==fe)return false;
+    if(fs!=='Todos'&&r.estadoSII!==fs)return false;
+    if(fc_!=='Todos'&&r.estadoCruce!==fc_)return false;
+    if(ft!=='Todos'&&String(r.td)!==ft)return false;
+    if(fcat!=='Todos'){if(fcat==='Sin categoria'&&r.co)return false;if(fcat!=='Sin categoria'&&r.co!==fcat)return false;}
+    if(fq){var hay=(r.f+r.rut+r.rs+(r.co||'')+r.resp).toLowerCase();if(hay.indexOf(fq)<0)return false;}
+    return true;
+  });
+  renderTbl();renderCards();
+}
+
+function renderTbl(){
+  var tot=filtRec.length,pgs=Math.ceil(tot/PG)||1;page=Math.min(page,pgs);
+  var sl=filtRec.slice((page-1)*PG,page*PG);
+  document.getElementById('rec-count').textContent=tot+' registros';
+  document.getElementById('pag-info').textContent='Pag '+page+'/'+pgs;
+  document.getElementById('btn-prev').disabled=page<=1;document.getElementById('btn-next').disabled=page>=pgs;
+  var bSII={Registrado:'<span class="badge b-reg">\u2713 Registro</span>',Pendiente:'<span class="badge b-pen">\u23F0 Pendiente</span>',NoIncluir:'<span class="badge b-noinc">\u26D4 No Incluir</span>',Reclamado:'<span class="badge b-rec">\u2717 Reclamado</span>','Solo SAP':'<span class="badge b-solo">\u26A0 Solo SAP</span>'};
+  var bCruce={Contabilizado:'<span class="badge b-cont">\u2713 Contabilizado</span>','Pendiente SAP':'<span class="badge b-psap">\u29D6 Pendiente SAP</span>','No Incluir':'<span class="badge b-noinc">\u26D4 No Incluir (inf.)</span>','Pendiente SII':'<span class="badge b-psii">\u23F0 Pend. SII (inf.)</span>',Reclamado:'<span class="badge b-recl">\u2717 Reclamado (inf.)</span>','Sin Valor':'<span class="badge b-sinval">\u2014 Sin Valor</span>','Solo SAP':'<span class="badge b-solo">\u26A0 Solo SAP</span>'};
+  var bTD={'33':'<span class="badge b-t33">FT</span>','61':'<span class="badge b-t61">NC</span>','34':'<span class="badge b-t34">NF</span>'};
+  var html=sl.map(function(r){
+    var nc=String(r.td)==='61';var total=nc?-Math.abs(r.t):Math.abs(r.t);
+    var bcat=r.co?'<span class="badge b-cat">'+esc(r.co)+'</span>':'<span class="badge b-nocat">Sin cat.</span>';
+    return '<tr><td style="color:var(--blue);font-weight:700">'+esc(r.e)+'<br><span style="font-size:8px;color:var(--text4)">'+esc(r.mes||'')+'</span></td>'
+      +'<td>'+(bTD[String(r.td)]||esc(r.td||'-'))+'</td>'
+      +'<td style="color:var(--text3);font-size:9px">'+esc(r.rut)+'</td>'
+      +'<td style="max-width:150px;overflow:hidden;text-overflow:ellipsis" title="'+esc(r.rs)+'">'+esc(r.rs||'-')+'</td>'
+      +'<td style="font-family:monospace">'+esc(r.f)+'</td>'
+      +'<td style="color:var(--text3)">'+esc(r.fecha)+'</td>'
+      +'<td>'+bcat+'</td>'
+      +'<td style="font-size:9px;color:var(--yellow)">'+esc(r.resp||'-')+'</td>'
+      +'<td class="r">'+fmt(r.n)+'</td>'
+      +'<td class="r" style="color:var(--text3)">'+fmt(r.iv)+'</td>'
+      +'<td class="r" style="font-weight:600;color:'+(nc?'var(--red)':'var(--text)')+'">'+fmt(total)+'</td>'
+      +'<td style="font-size:9px;color:var(--teal)">'+esc(r.fp||'-')+'</td>'
+      +'<td style="font-size:8px;color:var(--text3);max-width:110px;overflow:hidden;text-overflow:ellipsis" title="'+esc(r.ref||'')+'">'+esc((r.ref||'-').substring(0,35))+'</td>'
+      +'<td>'+(bSII[r.estadoSII]||esc(r.estadoSII))+'</td>'
+      +'<td>'+(bCruce[r.estadoCruce]||esc(r.estadoCruce))+'</td>'
+      +'<td style="color:var(--green);font-size:9px" title="'+esc(r.matchNota||r.docSAP||'')+'">'+(r.matchNota?'<span style="color:var(--teal)">&#x21C4; '+esc(r.docSAP||'Match')+'</span>':esc(r.docSAP||'-'))+'</td></tr>';
+  }).join('');
+  document.getElementById('tbl-body').innerHTML=html||'<tr><td colspan="16" style="text-align:center;padding:20px;color:var(--text4)">Sin registros</td></tr>';
+}
+
+function renderCards(){
+  var fe=document.getElementById('f-emp').value;
+  var base=allRec.filter(function(r){return (fe==='Todas'||r.e===fe)&&(!activeMesActivo||!r.mes||r.mes===''||r.mes===activeMesActivo);});
+  var siiAll=base.filter(function(r){return r.estadoSII!=='Solo SAP';});
+  var cont=base.filter(function(r){return r.estadoCruce==='Contabilizado';});
+  var pSAP=base.filter(function(r){return r.estadoCruce==='Pendiente SAP';});
+  var pSII=base.filter(function(r){return r.estadoCruce==='Pendiente SII';});
+  var noInc=base.filter(function(r){return r.estadoCruce==='No Incluir';});
+  var recl=base.filter(function(r){return r.estadoCruce==='Reclamado';});
+  var solo=base.filter(function(r){return r.estadoCruce==='Solo SAP';});
+  var sinVal=base.filter(function(r){return r.estadoCruce==='Sin Valor';});
+  var cs=[
+    {i:'&#128196;',v:siiAll.length,l:'Total SII',c:'var(--blue)',s:'Todos los estados'},
+    {i:'&#10003;',v:cont.length,l:'Contabilizados',c:'var(--green)',s:fc(cont.reduce(function(a,r){return a+Math.abs(r.t);},0))},
+    {i:'&#9878;',v:pSAP.length,l:'Pendiente SAP',c:'var(--yellow)',s:fc(pSAP.reduce(function(a,r){return a+Math.abs(r.t);},0))},
+    {i:'&#9899;',v:noInc.length,l:'No Incluir',c:'var(--text3)',s:'Solo informativo'},
+    {i:'&#8987;',v:pSII.length,l:'Pend. SII',c:'var(--teal)',s:'Mes cerrado en 0'},
+    {i:'&#10007;',v:recl.length,l:'Reclamados',c:'var(--red)',s:'Solo informativo'},
+    {i:'&#9888;',v:solo.length,l:'Solo SAP',c:'var(--purple)',s:fc(solo.reduce(function(a,r){return a+Math.abs(r.t);},0))},
+    {i:'&#8212;',v:sinVal.length,l:'Sin Valor',c:'var(--text4)',s:'No aplica contabilizar'},
+  ];
+  document.getElementById('stat-cards').innerHTML=cs.map(function(c){return '<div class="card" style="border-left:3px solid '+c.c+'"><div class="ico">'+c.i+'</div><div class="val" style="color:'+c.c+'">'+c.v+'</div><div class="lbl">'+c.l+'</div><div class="sub">'+c.s+'</div></div>';}).join('');
+}
+
+function renderResumen(){
+  var rows='';
+  EMPS.forEach(function(emp){
+    var sub=allRec.filter(function(r){return r.e===emp&&r.estadoSII!=='Solo SAP'&&(!activeMesActivo||!r.mes||r.mes===''||r.mes===activeMesActivo);});if(!sub.length)return;
+    var cont=sub.filter(function(r){return r.estadoCruce==='Contabilizado';}).length;
+    var pSAP=sub.filter(function(r){return r.estadoCruce==='Pendiente SAP';});
+    var pSII=sub.filter(function(r){return r.estadoCruce==='Pendiente SII';}).length;
+    var noInc=sub.filter(function(r){return r.estadoCruce==='No Incluir';}).length;
+    var recl=sub.filter(function(r){return r.estadoCruce==='Reclamado';}).length;
+    var reg=sub.filter(function(r){return r.estadoSII==='Registrado';}).length;
+    var pct=reg?Math.round(cont/reg*100):0;
+    var pc=pct>=95?'var(--green)':pct>=80?'var(--yellow)':'var(--red)';
+    var pm=pSAP.reduce(function(a,r){return a+Math.abs(r.t);},0);
+    rows+='<tr><td style="color:var(--blue);font-weight:700">'+emp+'</td><td style="color:var(--text3);font-size:9px">'+EF[emp]+'</td>'
+      +'<td class="r">'+reg+'</td><td class="r" style="color:var(--green)">'+cont+'</td>'
+      +'<td class="r" style="color:var(--yellow)">'+pSAP.length+'</td>'
+      +'<td class="r" style="color:var(--text3)">'+noInc+'</td>'
+      +'<td class="r" style="color:var(--teal)">'+pSII+'</td>'
+      +'<td class="r" style="color:var(--red)">'+recl+'</td>'
+      +'<td class="r"><span style="color:'+pc+';font-weight:700">'+pct+'%</span> <div class="bar" style="margin-left:4px"><div class="bar-fill" style="width:'+pct+'%;background:'+pc+'"></div></div></td>'
+      +'<td class="r" style="color:var(--yellow);font-weight:700">'+fc(pm)+'</td></tr>';
+  });
+  document.getElementById('res-body').innerHTML=rows;
+  document.getElementById('alert-title').textContent='\u26A0 Pendientes SAP \u2014 '+(activeMesActivo||'Todos los meses')+' 2026';
+  document.getElementById('alert-cards').innerHTML=EMPS.map(function(emp){
+    var pend=allRec.filter(function(r){return r.e===emp&&r.estadoCruce==='Pendiente SAP'&&(!activeMesActivo||!r.mes||r.mes===''||r.mes===activeMesActivo);});
+    var psii=allRec.filter(function(r){return r.e===emp&&r.estadoCruce==='Pendiente SII';}).length;
+    var pm=pend.reduce(function(a,r){return a+Math.abs(r.t);},0);
+    return '<div class="ac" style="border-left-color:'+(pend.length?'var(--orange)':'var(--green)')+'"><div style="font-weight:700;color:var(--blue);font-size:10px">'+emp+'</div><div style="font-size:16px;font-weight:700;color:'+(pend.length?'var(--red)':'var(--green)')+'">'+pend.length+'</div><div style="font-size:8px;color:var(--text3)">pend. SAP</div>'+(psii?'<div style="font-size:8px;color:var(--teal);margin-top:2px">'+psii+' pend. SII (inf.)</div>':'')+'<div style="font-size:8px;color:var(--yellow);margin-top:2px">'+fc(pm)+'</div></div>';
+  }).join('');
+}
+
+function renderMaestro(){
+  var pe={};EMPS.forEach(function(e){pe[e]=MAESTRO.filter(function(r){return r.e===e;}).length;});
+  document.getElementById('maestro-stats').innerHTML='<div style="display:flex;gap:12px;flex-wrap:wrap;font-size:10px;color:var(--text2)"><span>Total: <strong style="color:var(--blue)">'+MAESTRO.length+'</strong></span>'+EMPS.map(function(e){return '<span>'+e+': <strong style="color:var(--blue)">'+(pe[e]||0)+'</strong></span>';}).join('')+'</div>';
+  var pend=allRec.filter(function(r){return r.estadoCruce==='Pendiente SAP'&&!r.co;});
+  var nc=document.getElementById('nocat-section');
+  if(!pend.length){nc.innerHTML='<div style="font-size:9px;color:var(--green);padding:6px 0">\u2713 Todos los pendientes SAP tienen categoria</div>';}
+  else{
+    var uniq={};pend.forEach(function(r){if(!uniq[r.rn])uniq[r.rn]=r;});
+    var arr=Object.keys(uniq).slice(0,25).map(function(k){return uniq[k];});
+    var tot=pend.reduce(function(a,r){return a+Math.abs(r.t);},0);
+    nc.innerHTML='<div style="font-size:9px;color:var(--yellow);margin-bottom:6px">\u26A0 '+pend.length+' docs pend.SAP sin categoria | '+fc(tot)+'</div>'
+      +'<div class="tbl-wrap"><table><thead><tr><th>Empresa</th><th>RUT</th><th>Proveedor</th><th class="r">Monto</th></tr></thead><tbody>'
+      +arr.map(function(r){var m=pend.filter(function(x){return x.rn===r.rn;}).reduce(function(a,x){return a+Math.abs(x.t);},0);return '<tr><td style="color:var(--blue)">'+esc(r.e)+'</td><td>'+esc(r.rut)+'</td><td>'+esc(r.rs||'-')+'</td><td class="r">'+fc(m)+'</td></tr>';}).join('')
+      +'</tbody></table></div>';
+  }
+  var allPend=allRec.filter(function(r){return r.estadoCruce==='Pendiente SAP';});
+  var byConc={};allPend.forEach(function(r){var k=r.co||'Sin categoria';if(!byConc[k])byConc[k]={cnt:0,monto:0};byConc[k].cnt++;byConc[k].monto+=Math.abs(r.t);});
+  var cgEl=document.getElementById('concept-grid');
+  if(cgEl){cgEl.innerHTML='';Object.keys(byConc).sort(function(a,b){return byConc[b].monto-byConc[a].monto;}).forEach(function(cat){var item=byConc[cat];var div=document.createElement('div');div.className='concept-card';div.innerHTML='<div style="font-size:10px;font-weight:700">'+esc(cat)+'</div><div style="font-size:18px;font-weight:700;color:var(--blue)">'+item.cnt+'</div><div style="font-size:8px;color:var(--text3)">pend. SAP</div><div style="font-size:10px;color:var(--yellow);margin-top:3px">'+fc(item.monto)+'</div>';div.onclick=function(){filterByCat(cat);};cgEl.appendChild(div);});}
+  var rg=document.getElementById('resp-grid');
+  if(rg){var rm={};Object.keys(rLU).forEach(function(k){var r=rLU[k];if(!rm[r])rm[r]=[];rm[r].push(k);});rg.innerHTML='<div class="resp-grid">'+Object.keys(rm).map(function(resp){return '<div class="resp-card"><div style="font-size:10px;font-weight:700;color:var(--yellow)">'+esc(resp)+'</div>'+rm[resp].map(function(c){return '<div style="font-size:9px;color:var(--text3);margin-top:2px">\u25cf '+esc(c)+'</div>';}).join('')+'</div>';}).join('')+'</div>';}
+}
+
+function filterByCat(cat){
+  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});document.querySelectorAll('.tab-btn')[1].classList.add('active');
+  document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');});document.getElementById('panel-cruce').classList.add('active');
+  document.getElementById('f-cruce').value='Pendiente SAP';document.getElementById('f-cat').value=cat;applyF();
+}
+
+function parseMaestroCsv(txt){
+  var lines=txt.split('\n');if(!lines.length)return [];
+  var sep=lines[0].indexOf(';')>=0?';':',';
+  var h=lines[0].split(sep).map(function(s){return s.trim().replace(/"/g,'').toLowerCase();});
+  var iE=h.findIndex(function(x){return x.indexOf('empresa')>=0;});var iR=h.findIndex(function(x){return x.indexOf('rut')>=0;});var iC=h.findIndex(function(x){return x.indexOf('concepto')>=0;});var iT=h.findIndex(function(x){return x.indexOf('tratamiento')>=0;});
+  if(iR<0)return [];var rows=[];
+  for(var i=1;i<lines.length;i++){var p=scsv(lines[i],sep);if(p.length<2)continue;var rut=gv(p,iR);if(!rut)continue;rows.push({e:gv(p,iE),rn:nr(rut),co:gv(p,iC),tr:gv(p,iT)});}
+  return rows;
+}
+
+function parseRespCsv(txt){
+  var lines=txt.split('\n');if(!lines.length)return {};
+  var sep=lines[0].indexOf(';')>=0?';':',';
+  var h=lines[0].split(sep).map(function(s){return s.trim().replace(/"/g,'').toLowerCase();});
+  var iC=h.findIndex(function(x){return x.indexOf('concepto')>=0;});var iR=h.findIndex(function(x){return x.indexOf('cargo')>=0||x.indexOf('responsable')>=0;});
+  if(iC<0||iR<0)return {};var result={};
+  for(var i=1;i<lines.length;i++){var p=scsv(lines[i],sep);if(p.length<2)continue;var c=gv(p,iC);var r=gv(p,iR);if(c&&r)result[c]=r;}
+  return result;
+}
+
+function exportMaestro(){var h=['Empresa','RUT','Concepto','Tratamiento'];var rows=MAESTRO.map(function(r){return[r.e||'',r.rn||'',r.co||'',r.tr||''].join(',');});dl([h.join(',')].concat(rows).join('\n'),'Maestro_Proveedores.csv');toast('\u2193 Maestro descargado','ok');}
+
+function exportCSV(){
+  var h=['Empresa','Mes','Tipo Doc','RUT','Razon Social','Folio','Fecha','Neto','IVA','Total','Concepto','Responsable','Tratamiento','Forma Pago','Referencias','Estado SII','Estado Cruce','Doc SAP'];
+  var rows=filtRec.map(function(r){var nc=String(r.td)==='61';var total=nc?-Math.abs(r.t):Math.abs(r.t);return[r.e,r.mes||'',r.td,r.rut,'"'+r.rs+'"',r.f,r.fecha,r.n,r.iv,total,r.co||'',r.resp||'',r.tr||'',r.fp||'','"'+(r.ref||'')+'"',r.estadoSII,r.estadoCruce,r.docSAP||''].join(',');});
+  dl([h.join(',')].concat(rows).join('\n'),'Cruce_SII_SAP_'+(activeMesActivo||'Todos')+'.csv');toast('\u2193 CSV descargado','ok');
+}
+
+function exportResumen(){
+  var h=['Empresa','Nombre','Registros','Contabilizados','Pend SAP','No Incluir','Pend SII','Reclamados','Avance','Monto Pend SAP'];
+  var rows=EMPS.map(function(emp){
+    var sub=allRec.filter(function(r){return r.e===emp&&r.estadoSII!=='Solo SAP'&&(!activeMesActivo||!r.mes||r.mes===''||r.mes===activeMesActivo);});if(!sub.length)return null;
+    var cont=sub.filter(function(r){return r.estadoCruce==='Contabilizado';}).length;
+    var pSAP=sub.filter(function(r){return r.estadoCruce==='Pendiente SAP';});
+    var pSII=sub.filter(function(r){return r.estadoCruce==='Pendiente SII';}).length;
+    var noInc=sub.filter(function(r){return r.estadoCruce==='No Incluir';}).length;
+    var recl=sub.filter(function(r){return r.estadoCruce==='Reclamado';}).length;
+    var reg=sub.filter(function(r){return r.estadoSII==='Registrado';}).length;
+    var pct=reg?Math.round(cont/reg*100):0;
+    return[emp,EF[emp],reg,cont,pSAP.length,noInc,pSII,recl,pct+'%',pSAP.reduce(function(a,r){return a+Math.abs(r.t);},0)].join(',');
+  }).filter(Boolean);
+  dl([h.join(',')].concat(rows).join('\n'),'Resumen_SII_SAP.csv');
+}
+
+function dl(content,fname){var blob=new Blob(['\uFEFF'+content],{type:'text/csv;charset=utf-8'});var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download=fname;a.click();URL.revokeObjectURL(url);}
+function scsv(line,sep){sep=sep||',';var res=[],cur='',inQ=false;for(var i=0;i<line.length;i++){if(line[i]==='"')inQ=!inQ;else if(line[i]===sep&&!inQ){res.push(cur);cur='';}else cur+=line[i];}res.push(cur);return res;}
+function gv(p,i){if(i<0||i>=p.length)return '';return String(p[i]||'').replace(/"/g,'').trim();}
+function pm(s){var v=parseFloat(String(s||'').replace(/"/g,'').trim().replace(/\./g,'').replace(',','.'));return isNaN(v)?0:v;}
+function fmt(n){return new Intl.NumberFormat('es-CL').format(Math.round(n||0));}
+function fc(n){return '$'+fmt(n);}
+function esc(s){if(!s&&s!==0)return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function chPage(d){page+=d;renderTbl();window.scrollTo({top:150,behavior:'smooth'});}
+function checkBtn(){
+  var hasSII=false;
+  try{
+    hasSII=Object.keys(siiData).some(function(e){
+      if(!siiData[e])return false;
+      return ['Registrado','Pendiente','Reclamado','NoIncluir'].some(function(s){return (siiData[e][s]||[]).length>0;});
+    })||Object.keys(historico).length>0;
+  }catch(ex){}
+  var hasSAP=Object.keys(sapData).some(function(e){return sapData[e]&&sapData[e].length>0;});
+  var btn=document.getElementById('btn-proc');
+  if(btn){
+    btn.disabled=!(hasSII&&hasSAP);
+    btn.style.opacity=hasSII&&hasSAP?'1':'0.4';
+    btn.title=hasSII&&hasSAP?'Listo para procesar':(!hasSII?'Carga archivos SII primero':'Carga archivos SAP primero');
+  }
+}
+function setDot(id,st){var el=document.getElementById('dot-'+id);if(el)el.className='dot dot-'+st;}
+function setSt(id,t,msg){var el=document.getElementById('st-'+id);if(!el)return;el.textContent=msg;el.style.color=t==='ok'?'var(--green)':t==='warn'?'var(--yellow)':'var(--text3)';}
+function setDt(id,msg){var el=document.getElementById('dt-'+id);if(el)el.textContent=msg;}
+function setP(pct,lbl){document.getElementById('prog-fill').style.width=pct+'%';document.getElementById('prog-lbl').textContent=lbl;}
+function setMsg(m,t){var el=document.getElementById('proc-msg');el.textContent=m;el.className=t||'';}
+function showTab(tab,btn){document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});if(btn)btn.classList.add('active');document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');});document.getElementById('panel-'+tab).classList.add('active');if(tab==='resumen')renderResumen();if(tab==='maestro')renderMaestro();if(tab==='cruce')applyF();}
+function toast(msg,type){var el=document.getElementById('toast');el.textContent=msg;el.style.borderColor=type==='ok'?'var(--green)':type==='warn'?'var(--yellow)':'var(--border)';el.classList.add('show');setTimeout(function(){el.classList.remove('show');},3000);}
+
+</script>
+</body>
+</html>
